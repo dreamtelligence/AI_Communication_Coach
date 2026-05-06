@@ -12,8 +12,8 @@ app = modal.App("asr-coaching-analysis")
 # Configuration
 MODAL_NAME = "nvidia/parakeet-tdt-0.6b-v2"
 CUDA_TAG = "12.4.1-devel-ubuntu22.04"
-GEMINI_MODEL = "gemini-2.0-flash"
-GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai/"
+DEEPSEEK_MODEL = "deepseek-chat"
+DEEPSEEK_BASE_URL = "https://api.deepseek.com"
 HEYGEN_API_BASE = "https://api.liveavatar.com"
 
 # Heygen resource IDs (cached in memory after first setup)
@@ -50,7 +50,7 @@ SCENARIOS = [
         "category": "Arbeit",
         "icon": "briefcase",
         "description": "Du bist Führungskraft und musst einem Mitarbeiter Feedback zu seiner Leistung geben.",
-        "avatar_role": "Du bist der Mitarbeiter Alex, der seit 3 Jahren im Team ist. Du bist grundsätzlich engagiert, aber in letzter Zeit oft zu spät gekommen und hast zwei Deadlines verpasst. Du bist nervös wegen des Gesprächs.",
+        "avatar_role": "Du bist der Mitarbeiter Alex, der seit 3 Jahren im Team ist. Du bist grundsätzlich engagiert, aber in letzter Zeit oft zu spät gekommen und hast zwei Deadlines verpasst. Du bist nervös wegen des Gesprächs. Wenn der Nutzer empathisch ist → zeigst du dich erleichtert und öffnest dich, erzählst von privaten Problemen die zur Situation geführt haben. Wenn der Nutzer anklagend/unsensibel ist → wirst du defensiv und ziehst dich zurück, sagst nur noch das Nötigste. Wenn keine Lösung angeboten wird → fragst du 'Was soll ich denn jetzt Ihrer Meinung nach tun?'",
         "user_goal": "Führe ein konstruktives Feedbackgespräch mit Empathie. Adressiere die Probleme klar, aber wertschätzend. Erarbeite gemeinsam eine Lösung."
     },
     {
@@ -59,7 +59,7 @@ SCENARIOS = [
         "category": "Arbeit",
         "icon": "dollar",
         "description": "Du verhandelst mit deinem Vorgesetzten über eine Gehaltserhöhung.",
-        "avatar_role": "Du bist der Abteilungsleiter Dr. Meier. Du hast Budget für Gehaltsanpassungen, bist aber unter Druck vom Management, Kosten zu sparen. Du schätzt den Mitarbeiter sehr.",
+        "avatar_role": "Du bist der Abteilungsleiter Dr. Meier. Du hast Budget für Gehaltsanpassungen, bist aber unter Druck vom Management, Kosten zu sparen. Du schätzt den Mitarbeiter sehr. Wenn der Nutzer empathisch ist → würdigst du seine Leistungen und signalisierst Kompromissbereitschaft. Wenn der Nutzer anklagend/unsensibel ist → verweist du auf Budgetzwänge und blockst ab mit 'Das liegt nicht in meiner Hand'. Wenn keine Lösung angeboten wird → fragst du 'Was schlagen Sie konkret vor?'",
         "user_goal": "Argumentiere selbstbewusst für deine Gehaltserhöhung mit konkreten Leistungen. Bleibe sachlich und ergebnisorientiert."
     },
     {
@@ -68,7 +68,7 @@ SCENARIOS = [
         "category": "Arbeit",
         "icon": "message-circle",
         "description": "Ein verärgerter Kunde beschwert sich über ein fehlerhaftes Produkt.",
-        "avatar_role": "Du bist ein verärgerter Kunde, der viel Geld für ein Premium-Produkt ausgegeben hat, das defekt ist. Du bist emotional und fordernd, willst aber eigentlich nur ernst genommen werden und eine Lösung.",
+        "avatar_role": "Du bist ein verärgerter Kunde, der viel Geld für ein Premium-Produkt ausgegeben hat, das defekt ist. Du bist emotional und fordernd, willst aber eigentlich nur ernst genommen werden und eine Lösung. Wenn der Nutzer empathisch ist → beruhigst du dich spürbar und wirst kooperativ, sagst 'Danke, dass Sie mir zuhören'. Wenn der Nutzer anklagend/unsensibel ist → wirst du lauter und drohst mit 'Dann gehe ich zur Konkurrenz und schreibe eine Bewertung'. Wenn keine Lösung angeboten wird → forderst du 'Und was machen wir jetzt? Das kann ja nicht Ihr Ernst sein!'",
         "user_goal": "Beruhige den Kunden mit Empathie. Finde eine klare Lösung und sorge für ein positives Ergebnis."
     },
     {
@@ -77,7 +77,7 @@ SCENARIOS = [
         "category": "Arbeit",
         "icon": "users",
         "description": "Ein Kollege hat deine Idee im Meeting als seine ausgegeben.",
-        "avatar_role": "Du bist Chris, ein ehrgeiziger Kollege. Du hast die Idee tatsächlich übernommen, weil du unter Druck stehst und Anerkennung suchst. Du fühlst dich jetzt ertappt und bist defensiv.",
+        "avatar_role": "Du bist Chris, ein ehrgeiziger Kollege. Du hast die Idee tatsächlich übernommen, weil du unter Druck stehst und Anerkennung suchst. Du fühlst dich jetzt ertappt und bist defensiv. Wenn der Nutzer empathisch ist → gibst du klein bei und entschuldigst dich, gestehst den Druck ein. Wenn der Nutzer anklagend/unsensibel ist → wirst du angriffslustig und konterst mit 'Das war Teamarbeit, da gehört die Idee allen'. Wenn keine Lösung angeboten wird → sagst du 'Und was soll sich jetzt konkret ändern?'",
         "user_goal": "Spreche den Konflikt offen aber respektvoll an. Fokussiere auf die gemeinsame Zusammenarbeit."
     },
     {
@@ -86,7 +86,7 @@ SCENARIOS = [
         "category": "Arbeit",
         "icon": "trending-up",
         "description": "Du präsentierst ein neues Projekt vor der Geschäftsleitung.",
-        "avatar_role": "Du bist Frau Wagner, die CFO. Du bist kritisch und hinterfragst Zahlen. Du willst ROI-Details sehen, bevor du zustimmst.",
+        "avatar_role": "Du bist Frau Wagner, die CFO. Du bist kritisch und hinterfragst Zahlen. Du willst ROI-Details sehen, bevor du zustimmst. Wenn der Nutzer empathisch ist → signalisierst du vorsichtiges Interesse und stellst präzise Nachfragen. Wenn der Nutzer anklagend/unsensibel ist → wirst du knapp und sagst 'So kommen wir hier nicht weiter'. Wenn keine Lösung angeboten wird → beendest du das Gespräch mit 'Schicken Sie mir die Zahlen schriftlich, dann sehen wir weiter.'",
         "user_goal": "Präsentiere klar und strukturiert. Gehe auf kritische Fragen ein und bleibe ergebnisorientiert."
     },
     {
@@ -95,7 +95,7 @@ SCENARIOS = [
         "category": "Privat",
         "icon": "heart",
         "description": "Du möchtest mit deinem Partner über eure Zukunftspläne sprechen.",
-        "avatar_role": "Du bist der/die Partner/in. Du liebst deinen Partner, hast aber andere Vorstellungen von der Zukunft. Du willst verstanden werden.",
+        "avatar_role": "Du bist der/die Partner/in. Du liebst deinen Partner, hast aber andere Vorstellungen von der Zukunft. Du willst verstanden werden. Wenn der Nutzer empathisch ist → wirst du weicher und sagst 'Es bedeutet mir viel, dass du das verstehst'. Wenn der Nutzer anklagend/unsensibel ist → ziehst du dich emotional zurück und sagst 'Du hörst mir gar nicht zu'. Wenn keine Lösung angeboten wird → fragst du 'Wie stellst du dir unsere Zukunft eigentlich vor?'",
         "user_goal": "Führe ein empathisches Gespräch über Zukunftswünsche. Höre aktiv zu und finde Gemeinsamkeiten statt Unterschiede."
     },
     {
@@ -104,7 +104,7 @@ SCENARIOS = [
         "category": "Privat",
         "icon": "home",
         "description": "Dein Nachbar beschwert sich seit Wochen über Lärm.",
-        "avatar_role": "Du bist Nachbar Müller, Rentner, lebst allein. Der Lärm des Nachbarn stört deinen Schlaf. Du bist eigentlich ein freundlicher Mensch, aber zunehmend frustriert.",
+        "avatar_role": "Du bist Nachbar Müller, Rentner, lebst allein. Der Lärm des Nachbarn stört deinen Schlaf. Du bist eigentlich ein freundlicher Mensch, aber zunehmend frustriert. Wenn der Nutzer empathisch ist → wirst du ruhiger und erzählst von deiner gesundheitlichen Situation, zeigst dich kompromissbereit. Wenn der Nutzer anklagend/unsensibel ist → wirst du bitter und sagst 'Auf meine Rücksicht nimmt ja sowieso keiner'. Wenn keine Lösung angeboten wird → fragst du 'Also was machen wir jetzt? Ich kann so nicht weitermachen.'",
         "user_goal": "Deeskaliere die Situation. Zeige Verständnis und finde eine pragmatische Lösung für beide Seiten."
     },
     {
@@ -113,7 +113,7 @@ SCENARIOS = [
         "category": "Privat",
         "icon": "book-open",
         "description": "Die Lehrerin hat dich zum Gespräch über dein Kind eingeladen.",
-        "avatar_role": "Du bist Frau Schmidt, die Klassenlehrerin. Du machst dir Sorgen um das Kind, das sich zurückzieht. Du willst mit den Eltern kooperativ eine Lösung finden.",
+        "avatar_role": "Du bist Frau Schmidt, die Klassenlehrerin. Du machst dir Sorgen um das Kind, das sich zurückzieht. Du willst mit den Eltern kooperativ eine Lösung finden. Wenn der Nutzer empathisch ist → teilst du konkrete Beobachtungen und lobst das Engagement der Eltern. Wenn der Nutzer anklagend/unsensibel ist → wirst du formeller und sagst 'Ich dokumentiere das dann entsprechend'. Wenn keine Lösung angeboten wird → schlägst du vor 'Sollen wir einen Förderplan aufsetzen?'",
         "user_goal": "Bleibe offen für Feedback. Zeige Kooperationsbereitschaft und entwickle gemeinsam einen Plan zur Unterstützung des Kindes."
     },
     {
@@ -122,7 +122,7 @@ SCENARIOS = [
         "category": "Privat",
         "icon": "activity",
         "description": "Du hast gesundheitliche Beschwerden und musst diese dem Arzt klar schildern.",
-        "avatar_role": "Du bist Dr. Berger, ein vielbeschäftigter Hausarzt. Du hast nur 10 Minuten Zeit und brauchst präzise Informationen, um eine Diagnose zu stellen.",
+        "avatar_role": "Du bist Dr. Berger, ein vielbeschäftigter Hausarzt. Du hast nur 10 Minuten Zeit und brauchst präzise Informationen, um eine Diagnose zu stellen. Wenn der Nutzer empathisch ist → nimmst du dir einen Moment mehr Zeit und erklärst die nächsten Schritte verständlich. Wenn der Nutzer anklagend/unsensibel ist → wirst du knapp und sagst 'Ich habe noch weitere Patienten'. Wenn keine Lösung angeboten wird → stellst du eine klare Diagnose und sagst 'Das ist mein Befund, so gehen wir vor.'",
         "user_goal": "Beschreibe deine Symptome klar und strukturiert. Stelle die richtigen Fragen zur Behandlung."
     },
     {
@@ -131,10 +131,57 @@ SCENARIOS = [
         "category": "Training",
         "icon": "zap",
         "description": "Freies Kommunikationstraining mit dem TalkToMe Coach.",
-        "avatar_role": "Du bist ein professioneller Kommunikations-Coach. Du hilfst dem Nutzer, seine Kommunikationsfähigkeiten zu verbessern.",
+        "avatar_role": "Du bist ein professioneller Kommunikations-Coach. Du hilfst dem Nutzer, seine Kommunikationsfähigkeiten zu verbessern. Wenn der Nutzer empathisch ist → lobst du seinen Ansatz und gibst eine gezielte Verbesserungsempfehlung. Wenn der Nutzer anklagend/unsensibel ist → spiegelst du das Verhalten und fragst 'Wie kam das bei Ihrem Gegenüber wohl an?'. Wenn keine Lösung angeboten wird → fragst du 'Was möchten Sie in diesem Gespräch konkret erreichen?'",
         "user_goal": "Trainiere deine Kommunikationsfähigkeiten in einem offenen Gespräch."
     }
 ]
+
+SCENARIO_OPENINGS = {
+    "feedback": "Ich... ich wollte kurz fragen, ob das Gespräch heute wirklich sein muss.",
+    "salary": "Sie wollten mich sprechen?",
+    "complaint": "Das ist nicht akzeptabel! Ich habe viel Geld bezahlt und das funktioniert einfach nicht!",
+    "conflict_colleague": "Ich verstehe nicht warum du das so siehst, das war doch Teamarbeit.",
+    "presentation": "Bevor wir anfangen — welche konkreten Zahlen haben Sie mitgebracht?",
+    "relationship": "Ich freue mich dass wir endlich reden. Ich hatte das Gefühl du weichst dem Thema aus.",
+    "neighbor": "Ich wollte das eigentlich nicht ansprechen, aber es geht wirklich nicht mehr.",
+    "parents": "Danke dass Sie gekommen sind. Ich mache mir ehrlich gesagt Sorgen um Ihr Kind.",
+    "doctor": "Nächster bitte. Was kann ich für Sie tun? Ich habe etwa zehn Minuten.",
+    "free": "Hallo, schön dass Sie da sind. Womit kann ich Ihnen heute helfen?",
+}
+
+def get_opening(scenario_id: str) -> str:
+    return SCENARIO_OPENINGS.get(scenario_id, "Guten Tag.")
+
+
+def _parse_transcript(full_transcript: str) -> dict:
+    """
+    Parse a Heygen transcript and identify user vs avatar lines.
+    Returns separated transcripts with speaker labels for the prompt.
+    """
+    user_lines = []
+    avatar_lines = []
+    all_lines = []
+
+    for line in full_transcript.strip().split("\n"):
+        line = line.strip()
+        if not line:
+            continue
+        all_lines.append(line)
+        if ":" in line:
+            speaker, text = line.split(":", 1)
+            speaker_lower = speaker.strip().lower()
+            if speaker_lower in ("user", "human", "nutzer", "you", "participant", "ich"):
+                user_lines.append(text.strip())
+            else:
+                avatar_lines.append(f"[{speaker.strip()}]: {text.strip()}")
+        else:
+            user_lines.append(line)
+
+    return {
+        "user_only": "\n".join(user_lines) if user_lines else "",
+        "avatar_only": "\n".join(avatar_lines) if avatar_lines else "",
+        "full_transcript": "\n".join(all_lines)
+    }
 
 # Create a volume for model caching
 nemo_cache = modal.Volume.from_name("nemo-model-cache", create_if_missing=True)
@@ -220,30 +267,44 @@ class BatchTranscription:
 
 @app.function(
     image=image,
-    secrets=[modal.Secret.from_name("my-gemini-secret")]
+    secrets=[modal.Secret.from_name("my-deepseek-secret")]
 )
 def analyze_transcript(text: str):
-    """Analyze transcript with Gemini (free tier) via OpenAI-compatible endpoint."""
+    """Analyze transcript with DeepSeek via OpenAI-compatible endpoint."""
     from openai import OpenAI
 
-    api_key = os.environ.get("GEMINI_API_KEY")
+    api_key = os.environ.get("DEEPSEEK_API_KEY")
     if not api_key:
-        return {"error": "Gemini API key not found in secrets."}
+        return {"error": "DeepSeek API key not found in secrets."}
 
-    client = OpenAI(api_key=api_key, base_url=GEMINI_BASE_URL)
+    client = OpenAI(api_key=api_key, base_url=DEEPSEEK_BASE_URL)
 
     prompt = f"""
-    Du bist ein Experte fuer Coaching-Analyse. Analysiere das folgende Transkript eines Gespraechs
-    hinsichtlich der drei TalkToMe-Dimensionen:
-    1. Empathie (Wie gut wurde emotional validiert?)
-    2. Klarheit (Gibt es einen roten Faden?)
-    3. Ergebnisorientierung (Gibt es einen klaren Next Step?)
+    Du bist ein Experte fuer Kommunikations-Coaching. Analysiere das folgende Gespraechstranskript —
+    analysiere NUR die Aussagen des Nutzers, nicht die des Avatars/Gespraechspartners.
 
-    Gib die Analyse im JSON-Format zurueck mit den Schluesseln:
-    "empathy_score" (1-10), "empathy_feedback",
-    "clarity_score" (1-10), "clarity_feedback",
-    "result_score" (1-10), "result_feedback",
-    "summary"
+    Bewerte den Nutzer nach diesen konkreten, messbaren Kriterien:
+
+    1. EMPATHIE (1-10):
+       - Werden Emotionen des Gegenübers explizit benannt? (z.B. "Ich verstehe, dass Sie frustriert sind")
+       - Findet aktives Zuhören statt? (Paraphrasieren, Spiegeln, Nachfragen)
+       - Werden Pausen respektiert oder wird dem Gegenüber ins Wort gefallen?
+
+    2. KLARHEIT (1-10):
+       - Ist ein roter Faden erkennbar oder springt der Nutzer zwischen Themen?
+       - Werden Fachbegriffe oder unklare Aussagen erklärt?
+       - Ist eine logische Struktur vorhanden (Einleitung, Hauptteil, Abschluss)?
+
+    3. ERGEBNISORIENTIERUNG (1-10):
+       - Wird ein klares Ziel im Gespräch verfolgt?
+       - Wird ein konkreter nächster Schritt vereinbart?
+       - Steuert der Nutzer aktiv auf einen Abschluss hin?
+
+    Belege jeden Score mit einem direkten Zitat aus dem Transkript des Nutzers.
+    Formuliere das Feedback konstruktiv mit konkreten Verbesserungsvorschlägen.
+
+    Gib die Analyse im JSON-Format zurueck:
+    {{"empathy_score": 7, "empathy_feedback": "...", "clarity_score": 6, "clarity_feedback": "...", "result_score": 8, "result_feedback": "...", "summary": "..."}}
 
     Transkript:
     {text}
@@ -251,7 +312,7 @@ def analyze_transcript(text: str):
 
     try:
         response = client.chat.completions.create(
-            model=GEMINI_MODEL,
+            model=DEEPSEEK_MODEL,
             messages=[
                 {"role": "system", "content": "Du bist ein hilfreicher Assistent, der Coaching-Analysen im JSON-Format ausgibt. Antworte NUR mit JSON, kein Markdown."},
                 {"role": "user", "content": prompt}
@@ -275,7 +336,7 @@ def analyze_transcript(text: str):
     image=image,
     secrets=[
         modal.Secret.from_name("heygen-api-key"),
-        modal.Secret.from_name("my-gemini-secret")
+        modal.Secret.from_name("my-deepseek-secret")
     ]
 )
 def setup_heygen_resources(force: bool = False):
@@ -286,12 +347,12 @@ def setup_heygen_resources(force: bool = False):
     global heygen_secret_id, heygen_llm_config_id, heygen_contexts, heygen_avatar_id
 
     heygen_key = os.environ.get("HEYGEN_API_KEY")
-    gemini_key = os.environ.get("GEMINI_API_KEY")
+    deepseek_key = os.environ.get("DEEPSEEK_API_KEY")
 
     if not heygen_key:
         return {"error": "HEYGEN_API_KEY not found in secrets"}
-    if not gemini_key:
-        return {"error": "GEMINI_API_KEY not found in secrets"}
+    if not deepseek_key:
+        return {"error": "DEEPSEEK_API_KEY not found in secrets"}
 
     headers = {
         "X-API-KEY": heygen_key,
@@ -301,15 +362,15 @@ def setup_heygen_resources(force: bool = False):
 
     result = {}
 
-    # Step 1: Create secret for Gemini API key (or reuse existing)
+    # Step 1: Create secret for DeepSeek API key (or reuse existing)
     if not heygen_secret_id or force:
-        print("[Heygen Setup] Creating secret for Gemini API key...")
+        print("[Heygen Setup] Creating secret for DeepSeek API key...")
         list_resp = requests.get(f"{HEYGEN_API_BASE}/v1/secrets", headers=headers)
         if list_resp.status_code == 200:
             raw = list_resp.json().get("data", [])
             existing = raw if isinstance(raw, list) else raw.get("results", [])
             for s in existing:
-                if s.get("secret_name") == "gemini-api-key":
+                if s.get("secret_name") == "deepseek-api-key":
                     heygen_secret_id = s["id"]
                     print(f"[Heygen Setup] Reusing existing secret: {heygen_secret_id}")
                     break
@@ -319,9 +380,9 @@ def setup_heygen_resources(force: bool = False):
                 f"{HEYGEN_API_BASE}/v1/secrets",
                 headers=headers,
                 json={
-                    "secret_name": "gemini-api-key",
-                    "secret_value": gemini_key,
-                    "secret_type": "GEMINI_API_KEY"
+                    "secret_name": "deepseek-api-key",
+                    "secret_value": deepseek_key,
+                    "secret_type": "OPENAI_API_KEY"
                 }
             )
             if create_resp.status_code in (200, 201):
@@ -332,15 +393,15 @@ def setup_heygen_resources(force: bool = False):
 
     result["secret_id"] = heygen_secret_id
 
-    # Step 2: Create LLM configuration for Gemini
+    # Step 2: Create LLM configuration for DeepSeek
     if not heygen_llm_config_id or force:
-        print("[Heygen Setup] Creating LLM configuration for Gemini...")
+        print("[Heygen Setup] Creating LLM configuration for DeepSeek...")
         list_resp = requests.get(f"{HEYGEN_API_BASE}/v1/llm-configurations", headers=headers)
         if list_resp.status_code == 200:
             raw = list_resp.json().get("data", [])
             existing = raw if isinstance(raw, list) else raw.get("results", [])
             for cfg in existing:
-                if cfg.get("display_name") == "Gemini 2.0 Flash":
+                if cfg.get("display_name") == "DeepSeek V3":
                     heygen_llm_config_id = cfg["id"]
                     print(f"[Heygen Setup] Reusing existing LLM config: {heygen_llm_config_id}")
                     break
@@ -350,9 +411,9 @@ def setup_heygen_resources(force: bool = False):
                 f"{HEYGEN_API_BASE}/v1/llm-configurations",
                 headers=headers,
                 json={
-                    "display_name": "Gemini 2.0 Flash",
-                    "model_name": GEMINI_MODEL,
-                    "base_url": GEMINI_BASE_URL,
+                    "display_name": "DeepSeek V3",
+                    "model_name": DEEPSEEK_MODEL,
+                    "base_url": DEEPSEEK_BASE_URL,
                     "secret_id": heygen_secret_id
                 }
             )
@@ -390,7 +451,7 @@ def setup_heygen_resources(force: bool = False):
             continue
 
         prompt = LIVE_COACH_SYSTEM_PROMPT.format(avatar_role=scenario["avatar_role"])
-        opening = "Guten Tag."
+        opening = get_opening(sid)
 
         create_resp = requests.post(
             f"{HEYGEN_API_BASE}/v1/contexts",
@@ -419,7 +480,7 @@ def setup_heygen_resources(force: bool = False):
     image=image,
     secrets=[
         modal.Secret.from_name("heygen-api-key"),
-        modal.Secret.from_name("my-gemini-secret")
+        modal.Secret.from_name("my-deepseek-secret")
     ]
 )
 def create_liveavatar_session(sandbox: bool = True, scenario_id: str = "free"):
@@ -479,7 +540,7 @@ def create_liveavatar_session(sandbox: bool = True, scenario_id: str = "free"):
                 json={
                     "name": f"TalkToMe - {scenario['title']}",
                     "prompt": prompt,
-                    "opening_text": "Guten Tag."
+                    "opening_text": get_opening(scenario_id)
                 }
             )
             if create_resp.status_code in (200, 201):
@@ -566,7 +627,7 @@ async def transcribe(file: UploadFile = File(...)):
     transcriber = BatchTranscription()
     transcript_text = await transcriber.transcribe_bytes.remote.aio(audio_data)
 
-    # 2. Analysis (Gemini)
+    # 2. Analysis (DeepSeek)
     if transcript_text:
         analysis = await analyze_transcript.remote.aio(transcript_text)
     else:
@@ -607,16 +668,16 @@ async def session_status():
     image=image,
     secrets=[
         modal.Secret.from_name("heygen-api-key"),
-        modal.Secret.from_name("my-gemini-secret")
+        modal.Secret.from_name("my-deepseek-secret")
     ]
 )
 def analyze_session(session_id: str, scenario_id: str = "free"):
-    """Fetch transcript from Heygen and analyze with Gemini. Falls back to scenario-based coaching tips if transcript unavailable."""
+    """Fetch transcript from Heygen and analyze with DeepSeek. Falls back to scenario-based coaching tips if transcript unavailable."""
     from openai import OpenAI
 
-    gemini_key = os.environ.get("GEMINI_API_KEY")
-    if not gemini_key:
-        return {"error": "GEMINI_API_KEY not found"}
+    deepseek_key = os.environ.get("DEEPSEEK_API_KEY")
+    if not deepseek_key:
+        return {"error": "DEEPSEEK_API_KEY not found"}
 
     heygen_key = os.environ.get("HEYGEN_API_KEY")
     headers = {"X-API-KEY": heygen_key, "Accept": "application/json"} if heygen_key else {}
@@ -671,17 +732,33 @@ def analyze_session(session_id: str, scenario_id: str = "free"):
                             lines = [f"{e.get('speaker','?')}: {e.get('text','')}" for e in td]
                             full_transcript = "\n".join(lines)
 
-    client = OpenAI(api_key=gemini_key, base_url=GEMINI_BASE_URL)
+    client = OpenAI(api_key=deepseek_key, base_url=DEEPSEEK_BASE_URL)
 
     if full_transcript:
         # Analyze actual transcript
         prompt = f"""
-        Du bist ein Kommunikations-Coaching-Experte. Analysiere das folgende Gespraechstranskript
-        hinsichtlich der drei TalkToMe-Dimensionen:
+        Du bist ein Experte fuer Kommunikations-Coaching. Analysiere das folgende Gespraechstranskript —
+        analysiere NUR die Aussagen des Nutzers, nicht die des Avatars/Gespraechspartners.
 
-        1. Empathie (1-10): Wie gut hat der Nutzer emotional validiert und Verstaendnis gezeigt?
-        2. Klarheit (1-10): Hatte der Nutzer einen roten Faden? War er praezise?
-        3. Ergebnisorientierung (1-10): Hat der Nutzer auf ein klares Ergebnis hingesteuert?
+        Bewerte den Nutzer nach diesen konkreten, messbaren Kriterien:
+
+        1. EMPATHIE (1-10):
+           - Werden Emotionen des Gegenübers explizit benannt? (z.B. "Ich verstehe, dass Sie frustriert sind")
+           - Findet aktives Zuhören statt? (Paraphrasieren, Spiegeln, Nachfragen)
+           - Werden Pausen respektiert oder wird dem Gegenüber ins Wort gefallen?
+
+        2. KLARHEIT (1-10):
+           - Ist ein roter Faden erkennbar oder springt der Nutzer zwischen Themen?
+           - Werden Fachbegriffe oder unklare Aussagen erklärt?
+           - Ist eine logische Struktur vorhanden (Einleitung, Hauptteil, Abschluss)?
+
+        3. ERGEBNISORIENTIERUNG (1-10):
+           - Wird ein klares Ziel im Gespräch verfolgt?
+           - Wird ein konkreter nächster Schritt vereinbart?
+           - Steuert der Nutzer aktiv auf einen Abschluss hin?
+
+        Belege jeden Score mit einem direkten Zitat aus dem Transkript des Nutzers.
+        Formuliere das Feedback konstruktiv mit konkreten Verbesserungsvorschlägen.
 
         Gib die Analyse im JSON-Format zurueck:
         {{"empathy_score": 7, "empathy_feedback": "...", "clarity_score": 6, "clarity_feedback": "...", "result_score": 8, "result_feedback": "...", "summary": "..."}}
@@ -696,24 +773,40 @@ def analyze_session(session_id: str, scenario_id: str = "free"):
         scenario_role = scenario_meta.get("avatar_role", "") if scenario_meta else ""
 
         prompt = f"""
-        Du bist ein Kommunikations-Coaching-Experte. Der Nutzer hat gerade ein Live-Rollenspiel
+        Du bist ein Experte fuer Kommunikations-Coaching. Der Nutzer hat gerade ein Live-Rollenspiel
         zum Szenario "{scenario_title}" absolviert.
 
         Das Ziel des Nutzers war: {scenario_goal}
         Die Rolle des Avatars: {scenario_role}
 
-        Da das Transkript nicht automatisch verfuegbar ist, erstelle eine hilfreiche generische
-        Coaching-Analyse fuer dieses Szenario. Gib konkrete, umsetzbare Tipps.
+        Analysiere NUR die Leistung des Nutzers (nicht des Avatars) nach diesen messbaren Kriterien:
+
+        1. EMPATHIE (1-10):
+           - Werden Emotionen des Gegenübers explizit benannt?
+           - Findet aktives Zuhören statt? (Paraphrasieren, Spiegeln, Nachfragen)
+           - Werden Pausen respektiert?
+
+        2. KLARHEIT (1-10):
+           - Ist ein roter Faden erkennbar?
+           - Werden Fachbegriffe oder unklare Aussagen verständlich erklärt?
+           - Ist eine logische Struktur vorhanden?
+
+        3. ERGEBNISORIENTIERUNG (1-10):
+           - Wird ein klares Ziel im Gespräch verfolgt?
+           - Wird ein konkreter nächster Schritt vereinbart?
+           - Steuert der Nutzer aktiv auf einen Abschluss hin?
+
+        Da das Transkript nicht automatisch verfuegbar ist, erstelle eine generische aber spezifisch auf
+        dieses Szenario zugeschnittene Coaching-Analyse. Verwende realistische Scores (5-9),
+        gib konstruktives Feedback und formuliere konkrete, umsetzbare Verbesserungsvorschlaege.
 
         Gib die Analyse im JSON-Format zurueck:
         {{"empathy_score": 7, "empathy_feedback": "...", "clarity_score": 6, "clarity_feedback": "...", "result_score": 8, "result_feedback": "...", "summary": "..."}}
-
-        Verwende realistische Scores (5-9) und gib konstruktives, spezifisches Feedback.
         """
 
     try:
         response = client.chat.completions.create(
-            model=GEMINI_MODEL,
+            model=DEEPSEEK_MODEL,
             messages=[
                 {"role": "system", "content": "Du gibst Coaching-Analysen NUR als JSON aus, kein Markdown."},
                 {"role": "user", "content": prompt}
