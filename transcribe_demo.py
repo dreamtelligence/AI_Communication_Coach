@@ -12,7 +12,7 @@ app = modal.App("asr-coaching-analysis")
 # Configuration
 MODAL_NAME = "nvidia/parakeet-tdt-0.6b-v2"
 CUDA_TAG = "12.4.1-devel-ubuntu22.04"
-GEMINI_MODEL = "gemini-1.5-flash"
+GEMINI_MODEL = "gemini-2.0-flash"
 GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai/"
 HEYGEN_API_BASE = "https://api.liveavatar.com"
 
@@ -340,7 +340,7 @@ def setup_heygen_resources(force: bool = False):
             raw = list_resp.json().get("data", [])
             existing = raw if isinstance(raw, list) else raw.get("results", [])
             for cfg in existing:
-                if cfg.get("display_name") == "Gemini 1.5 Flash":
+                if cfg.get("display_name") == "Gemini 2.0 Flash":
                     heygen_llm_config_id = cfg["id"]
                     print(f"[Heygen Setup] Reusing existing LLM config: {heygen_llm_config_id}")
                     break
@@ -350,7 +350,7 @@ def setup_heygen_resources(force: bool = False):
                 f"{HEYGEN_API_BASE}/v1/llm-configurations",
                 headers=headers,
                 json={
-                    "display_name": "Gemini 1.5 Flash",
+                    "display_name": "Gemini 2.0 Flash",
                     "model_name": GEMINI_MODEL,
                     "base_url": GEMINI_BASE_URL,
                     "secret_id": heygen_secret_id
