@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { StopCircle, Loader2, AlertCircle, CheckCircle2, RefreshCw, Grid3X3, ChevronDown } from 'lucide-react'
+import RadialGauge from '@/components/RadialGauge'
 
 interface Scenario {
   id: string
@@ -125,7 +126,7 @@ export default function CoachAvatar() {
       <div className="coach-container">
         <div className="coach-placeholder">
           <Loader2 className="spinner-icon" size={48} />
-          <h2>Coach wird vorbereitet...</h2>
+          <h2>Coach wird vorbereitet…</h2>
           <p>Die KI-Ressourcen werden initialisiert.</p>
         </div>
       </div>
@@ -150,7 +151,7 @@ export default function CoachAvatar() {
     const categories = [...new Set(scenarios.map(s => s.category))]
     return (
       <div className="coach-container">
-        <div className="coach-placeholder" style={{ borderStyle: 'solid', background: 'var(--surface-inset)' }}>
+        <div className="coach-placeholder" style={{ borderStyle: 'solid' }}>
           <Grid3X3 size={40} />
           <h2>Trainingsszenario wählen</h2>
           <p>Wähle eine Gesprächssituation — der Avatar spielt die Rolle deines Gegenübers. Nach dem Gespräch erhältst du eine detaillierte Analyse.</p>
@@ -192,7 +193,7 @@ export default function CoachAvatar() {
       <div className="coach-container">
         <div className="coach-placeholder">
           <Loader2 className="spinner-icon" size={48} />
-          <h2>Session wird erstellt...</h2>
+          <h2>Session wird erstellt…</h2>
           <p>Szenario: {session.scenario?.title}</p>
         </div>
       </div>
@@ -211,9 +212,9 @@ export default function CoachAvatar() {
                 {session.scenario?.title || 'Live Coaching'}
               </h2>
               <p className="coach-scenario-hint">
-                🎯 Ziel: {session.scenario?.user_goal}
+                Ziel: {session.scenario?.user_goal}
                 <br />
-                💡 Der Avatar ist bereits in seiner Rolle. Sprich einfach natürlich — wie im echten Leben.
+                Der Avatar ist bereits in seiner Rolle. Sprich einfach natürlich — wie im echten Leben.
               </p>
             </div>
             <button
@@ -222,7 +223,7 @@ export default function CoachAvatar() {
               disabled={session.status === 'analyzing'}
             >
               {session.status === 'analyzing'
-                ? <><Loader2 className="spinner-icon" size={18} /> Analysiere...</>
+                ? <><Loader2 className="spinner-icon" size={18} /> Analysiere…</>
                 : <><StopCircle size={18} /> Beenden & Analysieren</>
               }
             </button>
@@ -238,7 +239,7 @@ export default function CoachAvatar() {
           <div className="coach-tips">
             <p>
               <strong>Tipp:</strong> Erlaube Mikrofon-Zugriff. Der Avatar ist bereits in der richtigen Rolle — sprich einfach
-              natürlich, wie du es im echten Leben tun würdest. Klicke "Beenden &amp; Analysieren", wenn das Gespräch fertig ist.
+              natürlich, wie du es im echten Leben tun würdest. Klicke "Beenden & Analysieren", wenn das Gespräch fertig ist.
             </p>
           </div>
         </div>
@@ -257,22 +258,22 @@ export default function CoachAvatar() {
 
           {analysis?.error && (
             <div className="debug-info">
-              <small>Hinweis: {analysis.error}</small>
+              Hinweis: {analysis.error}
             </div>
           )}
 
           {analysis?.note && (
-            <div className="coach-tips" style={{ marginBottom: 16 }}>
-              <p>💡 {analysis.note}</p>
+            <div className="coach-tips" style={{ marginBottom: 20 }}>
+              <p>{analysis.note}</p>
             </div>
           )}
 
           {!analysis?.error && (
             <>
-              <div className="scores-grid">
-                <ScoreBar label="Empathie" score={analysis?.empathy_score || 0} feedback={analysis?.empathy_feedback || ''} />
-                <ScoreBar label="Klarheit" score={analysis?.clarity_score || 0} feedback={analysis?.clarity_feedback || ''} />
-                <ScoreBar label="Ergebnis" score={analysis?.result_score || 0} feedback={analysis?.result_feedback || ''} />
+              <div className="gauges-row">
+                <RadialGauge label="Empathie" score={analysis?.empathy_score || 0} feedback={analysis?.empathy_feedback || ''} />
+                <RadialGauge label="Klarheit" score={analysis?.clarity_score || 0} feedback={analysis?.clarity_feedback || ''} />
+                <RadialGauge label="Ergebnis" score={analysis?.result_score || 0} feedback={analysis?.result_feedback || ''} />
               </div>
 
               <div className="summary-section">
@@ -281,16 +282,16 @@ export default function CoachAvatar() {
               </div>
 
               {analysis?.transcript && (
-                <details style={{ marginTop: 16 }}>
-                  <summary style={{ cursor: 'pointer', color: 'var(--secondary-text)' }}>Transkript anzeigen</summary>
+                <details style={{ marginTop: 20 }}>
+                  <summary style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontWeight: 500 }}>Transkript anzeigen</summary>
                   <pre className="transcript-pre">{analysis.transcript}</pre>
                 </details>
               )}
             </>
           )}
 
-          <div style={{ textAlign: 'center', marginTop: 24, display: 'flex', gap: 12, justifyContent: 'center' }}>
-            <button onClick={reset}>
+          <div style={{ textAlign: 'center', marginTop: 28, display: 'flex', gap: 12, justifyContent: 'center' }}>
+            <button onClick={reset} className="btn-accent">
               <RefreshCw size={18} /> Neues Szenario
             </button>
           </div>
@@ -314,19 +315,4 @@ export default function CoachAvatar() {
   }
 
   return null
-}
-
-function ScoreBar({ label, score, feedback }: { label: string, score: number, feedback: string }) {
-  return (
-    <div className="score-item">
-      <div className="score-header">
-        <span>{label}</span>
-        <span className="score-value">{score}/10</span>
-      </div>
-      <div className="progress-bg">
-        <div className="progress-fill" style={{ width: `${score * 10}%` }}></div>
-      </div>
-      <p className="score-feedback">{feedback}</p>
-    </div>
-  )
 }

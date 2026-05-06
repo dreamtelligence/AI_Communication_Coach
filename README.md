@@ -1,86 +1,119 @@
-# TalkToMe ASR Prototype
+# TalkToMe — KI-Coaching mit LiveAvatar
 
-A high-performance, scalable speech-to-text (ASR) application built for **PeopleFactor** to demonstrate the "TalkToMe" scaling lever.
+Eine interaktive Coaching-Plattform für Kommunikationstraining. Nutzer üben Gespräche mit einem KI-Avatar (Heygen) und erhalten eine KI-gestützte Analyse ihrer Kommunikationsfähigkeiten (DeepSeek).
 
-https://aliundmaggy--talktome-asr-web-v2-fastapi-app.modal.run/
+https://aliundmaggy--asr-coaching-analysis-fastapi-app.modal.run/
 
-## 🚀 Overview
+## Übersicht
 
-This prototype leverages **Modal** and **NVIDIA Parakeet** (TDT 0.6b v2) to provide near-instant transcription on enterprise-grade L40S GPUs. It features a modern React dashboard for interactive demos.
+Die App ermöglicht Führungskräften, Mitarbeitern und Privatpersonen, schwierige Gespräche in einem realistischen Rollenspiel zu üben:
 
-### Key Features
-- **GPU Acceleration**: Powered by NVIDIA L40S GPUs on Modal's serverless infrastructure.
-- **Model Caching**: Persistent storage via Modal Volumes to minimize cold starts.
-- **Modern UI**: Dark-themed React dashboard with drag-and-drop support.
-- **Serverless Backend**: Scalable FastAPI service that autoscales to zero when not in use.
+1. **Szenario wählen** — 10 Trainingsszenarien aus den Bereichen Arbeit, Privat, Training
+2. **Mit Avatar sprechen** — Der Heygen LiveAvatar spielt die Rolle des Gegenübers (Chef, Kunde, Partner etc.)
+3. **Analyse erhalten** — DeepSeek bewertet die Kommunikation des Nutzers nach Empathie, Klarheit und Ergebnisorientierung
 
----
+## Tech Stack
 
-## 🛠 Tech Stack
+| Komponente | Technologie |
+|---|---|
+| **Backend** | Python 3.12, FastAPI, Modal (serverless GPU) |
+| **Avatar** | Heygen LiveAvatar API (interaktiver KI-Avatar) |
+| **Analyse** | DeepSeek Chat ($0.44/$0.87 pro M tokens) |
+| **ASR** | NVIDIA Parakeet TDT 0.6b v2 (GPU-Transkription) |
+| **Frontend** | React (TypeScript), Vite, Lucide Icons |
+| **Infrastruktur** | Modal L40S GPU, Serverless Functions |
 
-- **Backend**: Python 3.12, FastAPI, Modal Labs.
-- **ASR Model**: [NVIDIA Parakeet TDT 0.6b v2](https://huggingface.co/nvidia/parakeet-tdt-0.6b-v2).
-- **Frontend**: React (TypeScript), Vite, Vanilla CSS, Lucide Icons.
-- **Infrastructure**: Modal (Serverless GPU & Volumes).
+## Szenarien
 
----
+### Arbeit
+- **Feedbackgespräch** — Mitarbeiter Alex braucht konstruktives Feedback
+- **Gehaltsverhandlung** — Verhandlung mit Abteilungsleiter Dr. Meier
+- **Kundenbeschwerde** — Verärgerter Kunde mit defektem Produkt
+- **Konflikt mit Kollege** — Kollege Chris hat eine Idee gestohlen
+- **Präsentation vor Geschäftsleitung** — CFO Frau Wagner hinterfragt Zahlen
 
-## 🏃 Local Setup & Deployment
+### Privat
+- **Beziehungsgespräch** — Unterschiedliche Zukunftsvorstellungen
+- **Nachbarschaftskonflikt** — Lärmbelästigung bei Rentner Müller
+- **Elterngespräch** — Lehrkraft Frau Schmidt sorgt sich ums Kind
+- **Arztgespräch** — Dr. Berger unter Zeitdruck
 
-### 1. Prerequisites
+### Training
+- **Freies Coaching** — Offenes Kommunikationstraining mit Coach
+
+Jedes Szenario hat dynamische Avatar-Reaktionen: Der Avatar reagiert unterschiedlich je nachdem, ob der Nutzer empathisch oder anklagend kommuniziert.
+
+## Analyse-Dimensionen
+
+Die DeepSeek-Analyse bewertet den Nutzer nach drei Kern-Dimensionen:
+
+1. **Empathie & Emotionale Intelligenz** (1-10) — Aktives Zuhören, Emotionserkennung, Tonfall-Anpassung
+2. **Sprachliche Klarheit & Struktur** (1-10) — Roter Faden, Präzision, Gesprächsaufbau
+3. **Ergebnisorientierung & Zielführung** (1-10) — Zielverfolgung, Abschlussstärke, Flexibilität
+
+Jeder Score wird mit wörtlichen Zitaten aus den Nutzer-Aussagen belegt. Die Avatar-Aussagen dienen nur als Kontext — bewertet wird ausschließlich der menschliche Nutzer.
+
+## Setup & Deployment
+
+### Voraussetzungen
 - Python 3.12+
 - Node.js & npm
-- A Modal account (`pip install modal && modal setup`)
+- Modal Account (`pip install modal && modal setup`)
+- Heygen API Key (für LiveAvatar)
+- DeepSeek API Key (für Analyse)
 
-### 2. Environment Setup
+### Environment
 ```bash
-# Create virtual environment
 python3 -m venv .venv
 source .venv/bin/activate
-
-# Install dependencies
-pip install modal fastapi[standard] python-multipart
+pip install modal fastapi[standard] python-multipart openai requests
 ```
 
-### 3. Build & Deploy
-```bash
-# 1. Build the Frontend
-cd asr_demo/frontend
-npm install
-npm run build
+### Modal Secrets
+In Modal müssen drei Secrets angelegt werden:
+- `heygen-api-key` — `HEYGEN_API_KEY`
+- `my-deepseek-secret` — `DEEPSEEK_API_KEY`
 
-# 2. Deploy to Modal
+### Build & Deploy
+```bash
+cd frontend && npm install && npm run build
 cd ..
 modal deploy transcribe_demo.py
 ```
 
----
+## Projektstruktur
 
-## 📂 Project Structure
+```
+asr_demo/
+├── transcribe_demo.py    # Main App: FastAPI, Modal Functions, Heygen-Integration
+├── frontend/             # React SPA
+│   ├── src/
+│   │   ├── App.tsx        # Main layout + navigation
+│   │   └── CoachAvatar.tsx # Avatar-Komponente, Szenario-Auswahl, Analyse-Display
+│   └── dist/              # Build-Output (wird nach Modal deployed)
+├── samples/              # Test-Audiodateien
+├── scratch/              # Experimente
+└── .env.local            # Lokale Secrets (nicht in git)
+```
 
-- `asr_demo/`
-  - `transcribe_demo.py`: Main Modal application (FastAPI + GPU Class).
-  - `dist/`: Compiled frontend assets (generated by npm run build).
-  - `frontend/`: React source code.
-    - `src/App.tsx`: Main UI logic.
-    - `src/index.css`: Dashboard styling.
-  - `README.md`: Project documentation.
+## API Endpunkte
 
----
+| Endpoint | Methode | Beschreibung |
+|---|---|---|
+| `/api/scenarios` | GET | Alle Trainingsszenarien |
+| `/api/session/create` | POST | Neue Avatar-Session starten |
+| `/api/session/analyze` | POST | Session analysieren |
+| `/api/session/status` | GET | Heygen-Setup-Status |
+| `/api/heygen/setup` | GET | Heygen-Ressourcen neu initialisieren |
+| `/api/transcribe` | POST | Audio-Transkription + Analyse |
 
-## 💡 Demo Guide for Call with Jörg Haas
+## Heygen-Ressourcen
 
-1. **Access the URL**: Open the deployed Modal URL.
-2. **First Run (Cold Start)**: The first transcription takes ~15s while the model loads into the GPU.
-3. **Subsequent Runs**: Thanks to the **Model Cache**, following runs will be significantly faster.
-4. **Analysis**: Explain that this is the "foundation". The next step is adding **Multi-Agent LLM analysis** (Empathy, Clarity, Logic) based on this high-quality transcript.
+Beim ersten Start (`/api/heygen/setup`) werden automatisch angelegt:
+- **Secret**: DeepSeek API Key (als `OPENAI_API_KEY` Secret-Type)
+- **LLM Configuration**: DeepSeek Chat mit OpenAI-kompatiblem Endpunkt
+- **Contexts**: Pro Szenario ein Avatar-Kontext mit System-Prompt, Eröffnungstext und Voice
 
----
+## Lizenz
 
-## 🔒 Security & Privacy
-- **Data Handling**: Files are processed in memory and transient temp files are deleted immediately after transcription.
-- **PII Redaction**: (Future step) Implement a PII-scrubbing agent before sending transcripts to public LLMs.
-
----
-
-Produced for the **TalkToMe** initiative.
+Proprietär — PeopleFactor / TalkToMe

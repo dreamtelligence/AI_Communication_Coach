@@ -277,44 +277,74 @@ def analyze_transcript(text: str):
     if not api_key:
         return {"error": "DeepSeek API key not found in secrets."}
 
+    parsed = _parse_transcript(text)
+    user_text = parsed["user_only"]
+    avatar_text = parsed["avatar_only"]
+    avatar_lines_for_context = avatar_text if avatar_text else "(keine Avatar-Aussagen)"
+
     client = OpenAI(api_key=api_key, base_url=DEEPSEEK_BASE_URL)
 
-    prompt = f"""
-    Du bist ein Experte fuer Kommunikations-Coaching. Analysiere das folgende Gespraechstranskript —
-    analysiere NUR die Aussagen des Nutzers, nicht die des Avatars/Gespraechspartners.
+    system_prompt = """Du bist ein erfahrener Kommunikations-Coach mit 20 Jahren Erfahrung (Senior Executive Coach).
+Du analysierst Live-Rollenspiele, in denen ein MENSCHLICHER NUTZER mit einem KI-AVATAR spricht.
 
-    Bewerte den Nutzer nach diesen konkreten, messbaren Kriterien:
+DEINE AUFGABE: Analysiere AUSSCHLIESSLICH den menschlichen Nutzer. Der Avatar ist eine KI — bewertet wird NUR der echte Mensch.
 
-    1. EMPATHIE (1-10):
-       - Werden Emotionen des Gegenübers explizit benannt? (z.B. "Ich verstehe, dass Sie frustriert sind")
-       - Findet aktives Zuhören statt? (Paraphrasieren, Spiegeln, Nachfragen)
-       - Werden Pausen respektiert oder wird dem Gegenüber ins Wort gefallen?
+WICHTIGE REGELN:
+1. Analysiere NUR die Aussagen des MENSCHLICHEN NUTZERS (im Transkript als "User", "Human", "Nutzer" oder ähnlich markiert).
+2. Die Avatar-Aussagen dienen NUR als Kontext — sie zeigen, worauf der Nutzer reagiert hat.
+3. Jeder Score MUSS mit einem wörtlichen Zitat aus den NUTZER-Aussagen belegt werden.
+4. Verwechsle NIEMALS Avatar und Nutzer. Wenn du dir unsicher bist, wer wer ist: Der Avatar spricht den ERSTEN Satz im Gespräch.
+5. Sei ehrlich und direkt. Beschönige nichts. Der Nutzer will sich verbessern — dafür braucht er ungeschönte Wahrheit.
+6. Antworte NUR mit JSON, kein Markdown, keine Erklärungen außerhalb des JSON."""
 
-    2. KLARHEIT (1-10):
-       - Ist ein roter Faden erkennbar oder springt der Nutzer zwischen Themen?
-       - Werden Fachbegriffe oder unklare Aussagen erklärt?
-       - Ist eine logische Struktur vorhanden (Einleitung, Hauptteil, Abschluss)?
+    prompt = f"""Analysiere das folgende Live-Coaching-Transkript.
 
-    3. ERGEBNISORIENTIERUNG (1-10):
-       - Wird ein klares Ziel im Gespräch verfolgt?
-       - Wird ein konkreter nächster Schritt vereinbart?
-       - Steuert der Nutzer aktiv auf einen Abschluss hin?
+DER AVATAR (KI-Gesprächspartner) hat diese Rolle gespielt und Folgendes gesagt:
+{avatar_lines_for_context}
 
-    Belege jeden Score mit einem direkten Zitat aus dem Transkript des Nutzers.
-    Formuliere das Feedback konstruktiv mit konkreten Verbesserungsvorschlägen.
+DER MENSCHLICHE NUTZER (wird bewertet) hat Folgendes gesagt:
+{user_text if user_text else "(Keine Nutzer-Aussagen gefunden — bitte analysiere das vollständige Transkript und identifiziere den menschlichen Sprecher)"}
 
-    Gib die Analyse im JSON-Format zurueck:
-    {{"empathy_score": 7, "empathy_feedback": "...", "clarity_score": 6, "clarity_feedback": "...", "result_score": 8, "result_feedback": "...", "summary": "..."}}
+VOLLSTÄNDIGES TRANSKRIPT (zur Orientierung):
+{text[:4000]}
 
-    Transkript:
-    {text}
-    """
+---
+BEWERTE DEN MENSCHLICHEN NUTZER NACH FOLGENDEN KRITERIEN:
+
+1. EMPATHIE & EMOTIONALE INTELLIGENZ (1-10):
+   - Erkennt und benennt der Nutzer die Emotionen des Gegenübers explizit?
+     (z.B. "Ich verstehe, dass Sie frustriert sind", "Ich höre raus, dass Sie Sorgen haben")
+   - Spiegelt/paraphrasiert der Nutzer, was das Gegenüber gesagt hat? (aktives Zuhören)
+   - Geht der Nutzer auf非verbale/emotionale Signale ein?
+   - Passt der Nutzer seinen Tonfall der Situation an? (z.B. beruhigend bei Ärger)
+   - Unterbricht der Nutzer das Gegenüber oder lässt er ausreden?
+
+2. SPRACHLICHE KLARHEIT & STRUKTUR (1-10):
+   - Hat der Nutzer einen klaren roten Faden oder springt er planlos zwischen Themen?
+   - Sind die Aussagen präzise oder vage? Werden konkrete Beispiele genannt?
+   - Gibt es eine erkennbare Gesprächsstruktur (Einleitung, Hauptteil, Abschluss)?
+   - Ist die Wortwahl dem Kontext angemessen (weder zu salopp noch zu gestelzt)?
+   - Werden Fachbegriffe verständlich erklärt?
+
+3. ERGEBNISORIENTIERUNG & ZIELFÜHRUNG (1-10):
+   - Verfolgt der Nutzer ein klares Ziel oder treibt das Gespräch ziellos?
+   - Lenkt der Nutzer das Gespräch aktiv in Richtung seines Ziels?
+   - Wird ein konkreter nächster Schritt / eine Vereinbarung getroffen?
+   - Reagiert der Nutzer flexibel auf unerwartete Wendungen, ohne das Ziel aus den Augen zu verlieren?
+   - Bringt der Nutzer das Gespräch zu einem klaren Abschluss?
+
+JEDER SCORE MUSS MIT MINDESTENS EINEM WÖRTLICHEN ZITAT DES NUTZERS BELEGT WERDEN.
+Formuliere das Feedback direkt, ehrlich und konstruktiv — wie ein Senior Coach, der wirklich helfen will.
+
+Gib die Analyse im JSON-Format zurück:
+{{"empathy_score": 7, "empathy_feedback": "...", "clarity_score": 6, "clarity_feedback": "...", "result_score": 8, "result_feedback": "...", "summary": "Gesamteinschätzung mit den 2-3 wichtigsten Entwicklungsfeldern des Nutzers."}}"""
 
     try:
         response = client.chat.completions.create(
             model=DEEPSEEK_MODEL,
+            temperature=0.3,
             messages=[
-                {"role": "system", "content": "Du bist ein hilfreicher Assistent, der Coaching-Analysen im JSON-Format ausgibt. Antworte NUR mit JSON, kein Markdown."},
+                {"role": "system", "content": system_prompt},
                 {"role": "user", "content": prompt}
             ]
         )
@@ -324,7 +354,9 @@ def analyze_transcript(text: str):
             clean_response = clean_response.split("```json")[1].split("```")[0].strip()
         elif clean_response.startswith("```"):
             clean_response = clean_response.split("```")[1].strip()
-        return json.loads(clean_response)
+        result = json.loads(clean_response)
+        result["transcript"] = text
+        return result
     except Exception as e:
         return {
             "summary": "Error during analysis",
@@ -734,81 +766,108 @@ def analyze_session(session_id: str, scenario_id: str = "free"):
 
     client = OpenAI(api_key=deepseek_key, base_url=DEEPSEEK_BASE_URL)
 
+    system_prompt = """Du bist ein erfahrener Kommunikations-Coach mit 20 Jahren Erfahrung (Senior Executive Coach).
+Du analysierst Live-Rollenspiele, in denen ein MENSCHLICHER NUTZER mit einem KI-AVATAR spricht.
+
+DEINE AUFGABE: Analysiere AUSSCHLIESSLICH den menschlichen Nutzer. Der Avatar ist eine KI — bewertet wird NUR der echte Mensch, der im Rollenspiel übt.
+
+WICHTIGE REGELN — MISSACHTEN FÜHRT ZU FEHLANALYSE:
+1. Analysiere NUR die Aussagen des MENSCHLICHEN NUTZERS. Im Transkript ist der Mensch meist als "User", "Human", "Nutzer" oder ähnlich markiert. Der Avatar (KI) trägt meist einen Rollennamen (z.B. "Dr. Meier", "Alex", "Frau Wagner") oder ist als "Avatar", "Assistant", "AI" markiert.
+2. Der Avatar spricht in der Regel den ERSTEN Satz im Gespräch (Begrüßung/Eröffnung). Alles was der Avatar sagt ist NUR Kontext.
+3. Jeder Score MUSS mit wörtlichen Zitaten des NUTZERS belegt werden — NIEMALS mit Avatar-Zitaten.
+4. Verwechsle NIEMALS Avatar und Nutzer. Wenn der Avatar sagt "Ich bin frustriert" und der Nutzer antwortet "Ich verstehe" — dann ist es falsch zu schreiben "Der Nutzer hat seine Frustration geäußert". Die Frustration gehört zum Avatar!
+5. Sei ehrlich und direkt. Beschönige nichts. Der Nutzer will sich verbessern — dafür braucht er ungeschönte, präzise Wahrheit.
+6. Antworte NUR mit JSON, kein Markdown, keine Erklärungen außerhalb des JSON."""
+
     if full_transcript:
-        # Analyze actual transcript
-        prompt = f"""
-        Du bist ein Experte fuer Kommunikations-Coaching. Analysiere das folgende Gespraechstranskript —
-        analysiere NUR die Aussagen des Nutzers, nicht die des Avatars/Gespraechspartners.
+        parsed = _parse_transcript(full_transcript)
+        user_text = parsed["user_only"]
+        avatar_text = parsed["avatar_only"]
 
-        Bewerte den Nutzer nach diesen konkreten, messbaren Kriterien:
+        scenario_title = scenario_meta.get("title", "Freies Coaching") if scenario_meta else "Freies Coaching"
+        scenario_goal = scenario_meta.get("user_goal", "Kommunikation verbessern") if scenario_meta else "Kommunikation verbessern"
 
-        1. EMPATHIE (1-10):
-           - Werden Emotionen des Gegenübers explizit benannt? (z.B. "Ich verstehe, dass Sie frustriert sind")
-           - Findet aktives Zuhören statt? (Paraphrasieren, Spiegeln, Nachfragen)
-           - Werden Pausen respektiert oder wird dem Gegenüber ins Wort gefallen?
+        prompt = f"""Analysiere ein Live-Coaching-Rollenspiel.
 
-        2. KLARHEIT (1-10):
-           - Ist ein roter Faden erkennbar oder springt der Nutzer zwischen Themen?
-           - Werden Fachbegriffe oder unklare Aussagen erklärt?
-           - Ist eine logische Struktur vorhanden (Einleitung, Hauptteil, Abschluss)?
+SZENARIO: {scenario_title}
+ZIEL DES NUTZERS: {scenario_goal}
 
-        3. ERGEBNISORIENTIERUNG (1-10):
-           - Wird ein klares Ziel im Gespräch verfolgt?
-           - Wird ein konkreter nächster Schritt vereinbart?
-           - Steuert der Nutzer aktiv auf einen Abschluss hin?
+---
+DER KI-AVATAR (Gesprächspartner, der vom Nutzer trainiert wird) sagte:
+{avatar_text if avatar_text else "(Keine Avatar-Aussagen identifiziert)"}
 
-        Belege jeden Score mit einem direkten Zitat aus dem Transkript des Nutzers.
-        Formuliere das Feedback konstruktiv mit konkreten Verbesserungsvorschlägen.
+---
+DER MENSCHLICHE NUTZER (wird bewertet — das ist die Person, die trainiert) sagte:
+{user_text if user_text else "(Keine Nutzer-Aussagen identifiziert — bitte identifiziere den menschlichen Sprecher anhand des Kontexts: Wer reagiert auf den Avatar?)"}
 
-        Gib die Analyse im JSON-Format zurueck:
-        {{"empathy_score": 7, "empathy_feedback": "...", "clarity_score": 6, "clarity_feedback": "...", "result_score": 8, "result_feedback": "...", "summary": "..."}}
+---
+VOLLSTÄNDIGES TRANSKRIPT (zur Orientierung, wer wem geantwortet hat):
+{full_transcript[:4000]}
 
-        Transkript:
-        {full_transcript[:4000]}
-        """
+---
+BEWERTE DEN MENSCHLICHEN NUTZER NACH DIESEN KRITERIEN:
+
+1. EMPATHIE & EMOTIONALE INTELLIGENZ (1-10):
+   - Erkennt und benennt der Nutzer die Emotionen des Gegenübers explizit?
+     (z.B. "Ich verstehe, dass Sie frustriert sind", "Ich höre raus, dass Sie unter Druck stehen")
+   - Spiegelt/paraphrasiert der Nutzer, was das Gegenüber gesagt hat? (aktives Zuhören)
+   - Geht der Nutzer auf emotionale Signale des Gegenübers ein?
+   - Passt der Nutzer seinen Tonfall der Situation an? (z.B. beruhigend bei Ärger, verständnisvoll bei Sorge)
+   - Unterbricht der Nutzer das Gegenüber oder lässt er ausreden?
+
+2. SPRACHLICHE KLARHEIT & STRUKTUR (1-10):
+   - Hat der Nutzer einen klaren roten Faden oder springt er planlos zwischen Themen?
+   - Sind die Aussagen präzise oder vage? Werden konkrete Beispiele/Zahlen genannt?
+   - Gibt es eine erkennbare Gesprächsstruktur (Einleitung → Hauptteil → Abschluss)?
+   - Ist die Wortwahl dem Kontext angemessen?
+   - Werden Fachbegriffe oder unklare Aussagen verständlich erklärt?
+
+3. ERGEBNISORIENTIERUNG & ZIELFÜHRUNG (1-10):
+   - Verfolgt der Nutzer ein klares Ziel oder treibt das Gespräch ziellos?
+   - Lenkt der Nutzer das Gespräch aktiv in Richtung seines Ziels?
+   - Wird ein konkreter nächster Schritt oder eine Vereinbarung getroffen?
+   - Reagiert der Nutzer flexibel auf unerwartete Wendungen, ohne das Ziel aus den Augen zu verlieren?
+   - Bringt der Nutzer das Gespräch zu einem klaren, verbindlichen Abschluss?
+
+JEDER SCORE MUSS MIT MINDESTENS EINEM WÖRTLICHEN ZITAT AUS DEN NUTZER-AUSSAGEN BELEGT WERDEN.
+Die Zitate müssen AUSSCHLIESSLICH vom menschlichen Nutzer stammen, nicht vom Avatar.
+Formuliere das Feedback direkt, ehrlich und konstruktiv — wie ein Senior Coach, der wirklich helfen will.
+Sei spezifisch: schreibe nicht "Der Nutzer war einfühlsam", sondern "Der Nutzer benannte die Sorge des Gegenübers mit den Worten 'Ich sehe, dass Ihnen das wichtig ist' — das war gut, aber er hätte noch tiefer nachfragen können, WAS genau die Sorge ist."
+
+Gib die Analyse im JSON-Format zurück:
+{{"empathy_score": 7, "empathy_feedback": "...", "clarity_score": 6, "clarity_feedback": "...", "result_score": 8, "result_feedback": "...", "summary": "Gesamteinschätzung mit den 2-3 wichtigsten Stärken und Entwicklungsfeldern"}}"""
     else:
-        # Generate coaching tips based on scenario metadata
         scenario_title = scenario_meta.get("title", "Freies Coaching") if scenario_meta else "Freies Coaching"
         scenario_goal = scenario_meta.get("user_goal", "Kommunikation verbessern") if scenario_meta else "Kommunikation verbessern"
         scenario_role = scenario_meta.get("avatar_role", "") if scenario_meta else ""
 
-        prompt = f"""
-        Du bist ein Experte fuer Kommunikations-Coaching. Der Nutzer hat gerade ein Live-Rollenspiel
-        zum Szenario "{scenario_title}" absolviert.
+        prompt = f"""Der Nutzer hat gerade ein Live-Rollenspiel mit einem KI-Avatar absolviert.
+Das Transkript ist technisch leider nicht verfügbar.
 
-        Das Ziel des Nutzers war: {scenario_goal}
-        Die Rolle des Avatars: {scenario_role}
+SZENARIO: {scenario_title}
+ZIEL DES NUTZERS (das ist die Person, die geübt hat): {scenario_goal}
+ROLLE DES AVATARS (KI-Gesprächspartner, nicht der Nutzer): {scenario_role}
 
-        Analysiere NUR die Leistung des Nutzers (nicht des Avatars) nach diesen messbaren Kriterien:
+Erstelle eine generische, aber spezifisch auf das Szenario "{scenario_title}" zugeschnittene Coaching-Analyse FÜR DEN MENSCHLICHEN NUTZER.
+Der Nutzer hat versucht, folgendes Ziel zu erreichen: {scenario_goal}
+Der Avatar spielte die Rolle: {scenario_role}
 
-        1. EMPATHIE (1-10):
-           - Werden Emotionen des Gegenübers explizit benannt?
-           - Findet aktives Zuhören statt? (Paraphrasieren, Spiegeln, Nachfragen)
-           - Werden Pausen respektiert?
+Da kein Transkript vorliegt, formuliere das Feedback als hypothetische Analyse ("Vermutlich haben Sie...", "In dieser Situation ist es wichtig..."). Verwende realistische Scores (5-9) und gib konkrete, umsetzbare Verbesserungsvorschläge, die spezifisch zu diesem Szenario passen.
 
-        2. KLARHEIT (1-10):
-           - Ist ein roter Faden erkennbar?
-           - Werden Fachbegriffe oder unklare Aussagen verständlich erklärt?
-           - Ist eine logische Struktur vorhanden?
+Bewerte nach:
+1. EMPATHIE (1-10): Fähigkeit, die Emotionen der Rolle "{scenario_role[:80]}..." zu erkennen und darauf einzugehen
+2. KLARHEIT (1-10): Struktur und Präzision in der Argumentation
+3. ERGEBNIS (1-10): Zielorientierung und Abschlussstärke
 
-        3. ERGEBNISORIENTIERUNG (1-10):
-           - Wird ein klares Ziel im Gespräch verfolgt?
-           - Wird ein konkreter nächster Schritt vereinbart?
-           - Steuert der Nutzer aktiv auf einen Abschluss hin?
-
-        Da das Transkript nicht automatisch verfuegbar ist, erstelle eine generische aber spezifisch auf
-        dieses Szenario zugeschnittene Coaching-Analyse. Verwende realistische Scores (5-9),
-        gib konstruktives Feedback und formuliere konkrete, umsetzbare Verbesserungsvorschlaege.
-
-        Gib die Analyse im JSON-Format zurueck:
-        {{"empathy_score": 7, "empathy_feedback": "...", "clarity_score": 6, "clarity_feedback": "...", "result_score": 8, "result_feedback": "...", "summary": "..."}}
-        """
+Gib die Analyse im JSON-Format zurück:
+{{"empathy_score": 7, "empathy_feedback": "...", "clarity_score": 6, "clarity_feedback": "...", "result_score": 8, "result_feedback": "...", "summary": "..."}}"""
 
     try:
         response = client.chat.completions.create(
             model=DEEPSEEK_MODEL,
+            temperature=0.3,
             messages=[
-                {"role": "system", "content": "Du gibst Coaching-Analysen NUR als JSON aus, kein Markdown."},
+                {"role": "system", "content": system_prompt},
                 {"role": "user", "content": prompt}
             ]
         )

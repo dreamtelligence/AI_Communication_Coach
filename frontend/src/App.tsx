@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import { Upload, FileAudio, CheckCircle2, AlertCircle, MessageCircle, Mic } from 'lucide-react'
 import CoachAvatar from './CoachAvatar'
 import { PageBackground } from '@/components/ui/background-components'
+import RadialGauge from '@/components/RadialGauge'
 
 interface AnalysisResult {
   empathy_score: number;
@@ -65,25 +66,12 @@ function App() {
     }
   }
 
-  const ScoreBar = ({ label, score, feedback }: { label: string, score: number, feedback: string }) => (
-    <div className="score-item">
-      <div className="score-header">
-        <span>{label}</span>
-        <span className="score-value">{score}/10</span>
-      </div>
-      <div className="progress-bg">
-        <div className="progress-fill" style={{ width: `${score * 10}%` }}></div>
-      </div>
-      <p className="score-feedback">{feedback}</p>
-    </div>
-  )
-
   return (
     <PageBackground>
     <div className="dashboard">
       <header>
         <h1>CoachVoice</h1>
-        <p className="subtitle">AI Communication Coach &amp; Real-Time Analysis</p>
+        <p className="subtitle">AI Communication Coach — Real-Time Analysis</p>
       </header>
 
       <div className="tab-bar">
@@ -131,12 +119,13 @@ function App() {
             {file ? (
               <p>Selected: <strong>{file.name}</strong></p>
             ) : (
-              <p>Click or drag audio file here to analyze</p>
+              <p>Drop an audio file or click to browse</p>
             )}
           </div>
 
-          <div style={{ textAlign: 'center' }}>
+          <div style={{ textAlign: 'center', marginTop: 24 }}>
             <button
+              className={file && !loading ? 'btn-accent' : ''}
               onClick={handleUpload}
               disabled={!file || loading}
             >
@@ -147,13 +136,13 @@ function App() {
           {loading && (
             <div className="loading-container">
               <div className="spinner"></div>
-              <p>AI is transcribing &amp; analyzing on Modal L40S GPU...</p>
+              <p style={{ color: 'var(--text-secondary)' }}>AI is transcribing & analyzing on Modal L40S GPU…</p>
             </div>
           )}
 
           {error && (
-            <div className="result-card" style={{ borderColor: '#f85149' }}>
-              <div className="result-header" style={{ color: '#f85149' }}>
+            <div className="result-card" style={{ borderColor: 'rgba(248,113,113,0.3)' }}>
+              <div className="result-header" style={{ color: 'var(--danger)' }}>
                 <AlertCircle size={20} /> Error
               </div>
               <p className="transcript-text">{error}</p>
@@ -161,15 +150,15 @@ function App() {
           )}
 
           {analysis && (
-            <div className="result-card analysis-card">
+            <div className="result-card">
               <div className="result-header">
                 <CheckCircle2 size={20} /> Coaching Analysis
               </div>
 
-              <div className="scores-grid">
-                <ScoreBar label="Empathie" score={analysis.empathy_score} feedback={analysis.empathy_feedback} />
-                <ScoreBar label="Klarheit" score={analysis.clarity_score} feedback={analysis.clarity_feedback} />
-                <ScoreBar label="Ergebnis" score={analysis.result_score} feedback={analysis.result_feedback} />
+              <div className="gauges-row">
+                <RadialGauge label="Empathie" score={analysis.empathy_score} feedback={analysis.empathy_feedback} />
+                <RadialGauge label="Klarheit" score={analysis.clarity_score} feedback={analysis.clarity_feedback} />
+                <RadialGauge label="Ergebnis" score={analysis.result_score} feedback={analysis.result_feedback} />
               </div>
 
               <div className="summary-section">
@@ -179,7 +168,7 @@ function App() {
 
               {analysis.error && (
                 <div className="debug-info">
-                  <small>Analysis Note: {analysis.error}</small>
+                  Analysis Note: {analysis.error}
                 </div>
               )}
             </div>
@@ -196,8 +185,8 @@ function App() {
         </>
       )}
 
-      <footer style={{ marginTop: '40px', fontSize: '0.8rem', color: 'var(--secondary-text)', textAlign: 'center' }}>
-        Powered by HeyGen LiveAvatar, Modal &amp; NVIDIA Parakeet
+      <footer>
+        Powered by HeyGen LiveAvatar, Modal & NVIDIA Parakeet
       </footer>
     </div>
     </PageBackground>

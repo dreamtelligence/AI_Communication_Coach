@@ -1,19 +1,18 @@
-import { cn } from "@/lib/utils";
-
 export function PageBackground({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen w-full relative bg-white">
-      <div
-        className="absolute inset-0 z-0"
-        style={{
-          backgroundImage: `
-            radial-gradient(circle at center, #FFF991 0%, transparent 70%)
-          `,
-          opacity: 0.6,
-          mixBlendMode: "multiply",
-        }}
-      />
-      <div className="relative z-10">
+    <div className="min-h-screen w-full relative" style={{ background: 'var(--bg)' }}>
+      {/* Animated mesh gradient blobs */}
+      <div className="mesh-bg">
+        <div className="mesh-blob mesh-blob--1" />
+        <div className="mesh-blob mesh-blob--2" />
+        <div className="mesh-blob mesh-blob--3" />
+      </div>
+
+      {/* Subtle noise texture overlay */}
+      <div className="mesh-noise" />
+
+      {/* Content */}
+      <div style={{ position: 'relative', zIndex: 1 }}>
         {children}
       </div>
     </div>
