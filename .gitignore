@@ -1,0 +1,6 @@
+__pycache__/
+modal_env/
+node_modules/
+scratch/
+.DS_Store
+*.pyc
