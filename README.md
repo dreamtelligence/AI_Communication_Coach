@@ -2,7 +2,6 @@
 
 Eine interaktive Coaching-Plattform für Kommunikationstraining. Nutzer üben Gespräche mit einem KI-Avatar (Heygen) und erhalten eine KI-gestützte Analyse ihrer Kommunikationsfähigkeiten (DeepSeek).
 
-https://aliundmaggy--asr-coaching-analysis-fastapi-app.modal.run/
 
 ## Übersicht
 
