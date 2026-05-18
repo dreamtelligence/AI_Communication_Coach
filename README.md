@@ -113,6 +113,4 @@ Beim ersten Start (`/api/heygen/setup`) werden automatisch angelegt:
 - **LLM Configuration**: DeepSeek Chat mit OpenAI-kompatiblem Endpunkt
 - **Contexts**: Pro Szenario ein Avatar-Kontext mit System-Prompt, Eröffnungstext und Voice
 
-## Lizenz
 
-Proprietär — PeopleFactor / TalkToMe
