@@ -5,6 +5,7 @@ from typing import Any
 
 USER_SPEAKERS = {"user", "human", "nutzer", "you", "participant", "ich", "guest"}
 AVATAR_SPEAKERS = {"assistant", "avatar", "replica", "ai", "bot"}
+SYSTEM_SPEAKERS = {"system", "developer", "tool"}
 
 
 def parse_transcript(full_transcript: str) -> dict[str, str]:
@@ -16,19 +17,23 @@ def parse_transcript(full_transcript: str) -> dict[str, str]:
         line = raw_line.strip()
         if not line:
             continue
-        all_lines.append(line)
         if ":" not in line:
             user_lines.append(line)
+            all_lines.append(f"user: {line}")
             continue
         speaker, text = line.split(":", 1)
         speaker_name = speaker.strip()
         speaker_lower = speaker_name.lower()
+        if speaker_lower in SYSTEM_SPEAKERS:
+            continue
+        clean_text = text.strip()
+        if not clean_text:
+            continue
+        all_lines.append(f"{_display_speaker(speaker_lower, speaker_name)}: {clean_text}")
         if speaker_lower in USER_SPEAKERS:
-            user_lines.append(text.strip())
+            user_lines.append(clean_text)
         elif speaker_lower in AVATAR_SPEAKERS:
-            avatar_lines.append(f"[{speaker_name}]: {text.strip()}")
-        else:
-            avatar_lines.append(f"[{speaker_name}]: {text.strip()}")
+            avatar_lines.append(f"[{_display_speaker(speaker_lower, speaker_name)}]: {clean_text}")
 
     return {
         "user_only": "\n".join(user_lines),
@@ -90,4 +95,18 @@ def _entry_to_line(entry: Any) -> str | None:
     text = entry.get("text") or entry.get("content") or entry.get("message")
     if not text:
         return None
-    return f"{speaker}: {text}"
+    speaker_name = str(speaker).strip()
+    speaker_lower = speaker_name.lower()
+    if speaker_lower in SYSTEM_SPEAKERS:
+        return None
+    if speaker_lower not in USER_SPEAKERS and speaker_lower not in AVATAR_SPEAKERS:
+        return None
+    return f"{_display_speaker(speaker_lower, speaker_name)}: {str(text).strip()}"
+
+
+def _display_speaker(speaker_lower: str, fallback: str) -> str:
+    if speaker_lower in USER_SPEAKERS:
+        return "user"
+    if speaker_lower in AVATAR_SPEAKERS:
+        return "assistant"
+    return fallback

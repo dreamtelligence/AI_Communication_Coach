@@ -160,7 +160,8 @@ def _headers(api_key: str) -> dict[str, str]:
 
 def _checked_json(response: requests.Response, action: str) -> dict[str, Any]:
     if not response.ok:
-        raise TavusError(f"Could not {action}.")
+        detail = response.text[:500].strip()
+        raise TavusError(f"Could not {action}: HTTP {response.status_code}. {detail}")
     try:
         data = response.json()
     except ValueError as exc:

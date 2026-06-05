@@ -37,6 +37,7 @@ from coach_app.tavus_client import (
     setup_personas,
 )
 from coach_app.transcript import transcript_from_tavus_conversation
+from coach_app.transcript import parse_transcript
 
 
 app = modal.App("asr-coaching-analysis")
@@ -134,7 +135,7 @@ def analyze_transcript(text: str, scenario_id: str = "salary", practice_side: st
     prompt = build_analysis_prompt(text, scenario_id, practice_side)
     result = _run_analysis_prompt(prompt)
     if "error" not in result:
-        result["transcript"] = text
+        result["transcript"] = parse_transcript(text)["full_transcript"]
     return result
 
 
@@ -253,7 +254,7 @@ def analyze_tavus_session(conversation_id: str, scenario_id: str = "salary", pra
     prompt = build_analysis_prompt(transcript, scenario_id, practice_side)
     result = _run_analysis_prompt(prompt)
     if "error" not in result:
-        result["transcript"] = transcript
+        result["transcript"] = parse_transcript(transcript)["full_transcript"]
     return result
 
 

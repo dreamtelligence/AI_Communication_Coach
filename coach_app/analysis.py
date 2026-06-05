@@ -36,6 +36,7 @@ def build_analysis_prompt(text: str, scenario_id: str = "salary", practice_side_
     side = get_practice_side(scenario, practice_side_id)
     user_text = parsed["user_only"] or "(Keine Nutzer-Aussagen identifiziert.)"
     avatar_text = parsed["avatar_only"] or "(Keine Avatar-Aussagen identifiziert.)"
+    clean_transcript = parsed["full_transcript"] or "(Keine auswertbare Unterhaltung identifiziert.)"
     return f"""Analysiere ein Live-Coaching-Rollenspiel.
 
 SZENARIO: {scenario["title"]}
@@ -50,7 +51,7 @@ DER MENSCHLICHE NUTZER, der bewertet wird, sagte:
 {user_text}
 
 VOLLSTAENDIGES TRANSKRIPT:
-{text[:4000]}
+{clean_transcript[:4000]}
 
 Bewerte ausschliesslich den menschlichen Nutzer nach:
 1. Empathie und emotionale Intelligenz (1-10)
