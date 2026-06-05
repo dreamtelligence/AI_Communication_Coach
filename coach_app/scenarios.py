@@ -3,12 +3,12 @@ from __future__ import annotations
 from typing import Any
 
 
-PERSONA_VERSION = "v3"
+PERSONA_VERSION = "v4"
 
 LIVE_COACH_SYSTEM_PROMPT = """Du bist in einem realistischen Kommunikationstraining.
 
 NICHT VERHANDELBAR:
-- Du bist ausschliesslich diese Rolle: {avatar_role}
+- Du bist ausschließlich diese Rolle: {avatar_role}
 - Der menschliche Nutzer trainiert diese Rolle: {user_role}
 - Du bist kein Coach, kein Moderator und keine KI-Assistentin.
 - Gib während des Rollenspiels niemals Feedback, Tipps oder Analyse.
@@ -16,6 +16,8 @@ NICHT VERHANDELBAR:
 
 SPRACHE UND STIL:
 - Antworte immer auf Deutsch.
+- Nutze keine englischen Sätze, keine englischen Füllwörter und keine englischen Zusammenfassungen.
+- Wenn der Nutzer Englisch spricht, bleibst du trotzdem auf Deutsch und führst das Rollenspiel auf Deutsch weiter.
 - Sprich natürlich, knapp und menschlich: maximal 2-3 Sätze.
 - Reagiere emotional passend auf Ton, Inhalt und Körpersprache des Nutzers.
 - Stelle Rückfragen, wenn der Nutzer unklar bleibt.
@@ -123,6 +125,7 @@ def build_conversation_context(scenario: dict[str, Any], practice_side_id: str |
         f"Trainierte Nutzerrolle: {side['user_role']}\n"
         f"Deine Avatarrolle: {side['avatar_role']}\n"
         f"Ziel des Nutzers: {side['user_goal']}\n"
+        "Sprache: ausschließlich Deutsch. Keine englischen Sätze, auch nicht bei Begrüßung oder Rückfragen.\n"
         "Führe nur das Rollenspiel. Keine Analyse, keine Coaching-Tipps, keine Meta-Erklärungen."
     )
 

@@ -125,6 +125,8 @@ CoachVoice uses Tavus personas plus per-conversation context:
 - `system_prompt` defines durable behavior for a role-specific persona.
 - `conversational_context` reinforces the selected scenario and practice side.
 - `custom_greeting` starts the roleplay with an in-character opening line.
+- `properties.language = "german"` forces the conversation language to German instead of relying on prompt instructions alone.
+- `layers.stt.stt_engine = "tavus-parakeet"` selects Tavus' European-language STT path for the persona.
 - `verbose=true` is used after the call to retrieve `application.transcription_ready`.
 
 ### Analysis Layer

@@ -15,6 +15,8 @@ from coach_app.scenarios import (
 
 TAVUS_API_BASE = "https://tavusapi.com/v2"
 REQUEST_TIMEOUT = 20
+CONVERSATION_LANGUAGE = "german"
+STT_ENGINE = "tavus-parakeet"
 
 
 class TavusError(RuntimeError):
@@ -65,6 +67,7 @@ def create_conversation(
         "custom_greeting": get_opening(scenario["id"], side["id"]),
         "max_participants": 2,
         "properties": {
+            "language": CONVERSATION_LANGUAGE,
             "max_call_duration": 900,
             "participant_left_timeout": 20,
             "participant_absent_timeout": 120,
@@ -127,6 +130,16 @@ def _create_persona(api_key: str, replica_id: str, scenario: dict[str, Any], pra
         "system_prompt": build_persona_prompt(scenario, practice_side_id),
         "pipeline_mode": "full",
         "default_replica_id": replica_id,
+        "layers": {
+            "stt": {
+                "stt_engine": STT_ENGINE,
+                "hotwords": (
+                    "Deutschsprachiges Business-Rollenspiel. Wichtige Begriffe: "
+                    "Gehaltsverhandlung, Kundenbeschwerde, Führungskraft, Mitarbeiter, "
+                    "Service, Beschwerde, Vergütung, Budget, Lösung."
+                ),
+            }
+        },
     }
     response = requests.post(
         f"{TAVUS_API_BASE}/personas",
