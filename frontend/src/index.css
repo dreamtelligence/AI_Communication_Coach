@@ -595,6 +595,114 @@ body {
   box-shadow: none;
 }
 
+.demo-scenario-grid {
+  width: min(100%, 720px);
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.scenario-choice {
+  width: 100%;
+  min-height: 108px;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  background: var(--surface-glass);
+  color: var(--text);
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.2s var(--ease);
+}
+
+.scenario-choice:hover,
+.scenario-choice.active {
+  border-color: var(--border-glow);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-md), 0 0 24px rgba(99, 102, 241, 0.06);
+  transform: translateY(-1px);
+}
+
+.scenario-choice strong {
+  font-size: 0.95rem;
+  font-weight: 650;
+  color: var(--text);
+}
+
+.scenario-choice span {
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.role-panel {
+  width: min(100%, 720px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.role-panel-title {
+  align-self: flex-start;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.role-options {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.role-option {
+  width: 100%;
+  min-height: 122px;
+  padding: 14px 16px;
+  border-radius: var(--r);
+  border: 1px solid var(--border);
+  background: var(--surface-inset);
+  color: var(--text);
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.2s var(--ease);
+}
+
+.role-option:hover,
+.role-option.active {
+  border-color: rgba(74, 222, 128, 0.35);
+  background: rgba(74, 222, 128, 0.08);
+}
+
+.role-option strong {
+  font-size: 0.88rem;
+  font-weight: 650;
+  color: var(--text);
+}
+
+.role-option span {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+@media (min-width: 720px) {
+  .demo-scenario-grid,
+  .role-options {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 /* ── Card Grid ── */
 
 .scenario-grid {

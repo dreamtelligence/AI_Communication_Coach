@@ -1,6 +1,14 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { StopCircle, Loader2, AlertCircle, CheckCircle2, RefreshCw, Grid3X3, ChevronDown } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { StopCircle, Loader2, AlertCircle, CheckCircle2, RefreshCw, Grid3X3, PlayCircle } from 'lucide-react'
 import RadialGauge from '@/components/RadialGauge'
+
+interface PracticeSide {
+  id: string
+  label: string
+  user_role: string
+  avatar_role: string
+  user_goal: string
+}
 
 interface Scenario {
   id: string
@@ -10,13 +18,16 @@ interface Scenario {
   description: string
   avatar_role: string
   user_goal: string
+  practice_sides: PracticeSide[]
 }
 
 interface SessionState {
   status: 'idle' | 'selecting' | 'creating' | 'active' | 'analyzing' | 'done' | 'error'
   embedUrl?: string
   sessionId?: string
+  conversationId?: string
   scenario?: Scenario
+  practiceSide?: PracticeSide
   error?: string
 }
 
@@ -36,55 +47,39 @@ interface Analysis {
 export default function CoachAvatar() {
   const [session, setSession] = useState<SessionState>({ status: 'selecting' })
   const [scenarios, setScenarios] = useState<Scenario[]>([])
+  const [selectedScenarioId, setSelectedScenarioId] = useState('salary')
+  const [selectedSideId, setSelectedSideId] = useState('')
   const [setupStatus, setSetupStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const [analysis, setAnalysis] = useState<Analysis | null>(null)
-  const [menuOpen, setMenuOpen] = useState(false)
-  const menuRef = useRef<HTMLDivElement>(null)
-  const triggerRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     fetch('/api/scenarios')
       .then(r => r.json())
       .then(data => setScenarios(data.scenarios || []))
-      .catch(() => {})
+      .catch(() => setScenarios([]))
 
     fetch('/api/session/status')
       .then(r => r.json())
       .then(data => {
-        if (!data.configured) {
-          return fetch('/api/heygen/setup')
-        }
-        return { ok: true }
+        if (!data.configured) throw new Error('Tavus ist nicht konfiguriert.')
+        setSetupStatus('ready')
       })
-      .then(() => setSetupStatus('ready'))
       .catch(() => setSetupStatus('error'))
   }, [])
 
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (
-        menuRef.current && !menuRef.current.contains(e.target as Node) &&
-        triggerRef.current && !triggerRef.current.contains(e.target as Node)
-      ) {
-        setMenuOpen(false)
-      }
-    }
-    if (menuOpen) {
-      document.addEventListener('mousedown', handleClick)
-      return () => document.removeEventListener('mousedown', handleClick)
-    }
-  }, [menuOpen])
-
-  const startCoaching = useCallback(async (scenario: Scenario) => {
-    setMenuOpen(false)
-    setSession({ status: 'creating', scenario })
+  const startCoaching = useCallback(async (scenario: Scenario, practiceSide: PracticeSide) => {
+    setSession({ status: 'creating', scenario, practiceSide })
     setAnalysis(null)
     try {
-      const resp = await fetch(`/api/session/create?scenario_id=${scenario.id}&sandbox=false`, { method: 'POST' })
+      const resp = await fetch('/api/session/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scenario_id: scenario.id, practice_side: practiceSide.id, sandbox: false })
+      })
       const data = await resp.json()
 
-      if (data.error) {
-        setSession({ status: 'error', error: data.error, scenario })
+      if (!resp.ok || data.error) {
+        setSession({ status: 'error', error: data.error || data.detail || 'Session konnte nicht erstellt werden.', scenario, practiceSide })
         return
       }
 
@@ -92,29 +87,40 @@ export default function CoachAvatar() {
         status: 'active',
         embedUrl: data.embed_url,
         sessionId: data.session_id,
-        scenario
+        conversationId: data.conversation_id,
+        scenario,
+        practiceSide
       })
-    } catch (err: any) {
-      setSession({ status: 'error', error: err.message || 'Fehler bei Session-Erstellung', scenario })
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Fehler bei Session-Erstellung'
+      setSession({ status: 'error', error: message, scenario, practiceSide })
     }
   }, [])
 
   const stopAndAnalyze = useCallback(async () => {
-    if (!session.sessionId) return
+    const conversationId = session.conversationId || session.sessionId
+    if (!conversationId) return
     setSession(s => ({ ...s, status: 'analyzing' }))
 
     try {
-      const formData = new FormData()
-      formData.append('session_id', session.sessionId)
-      const resp = await fetch(`/api/session/analyze?session_id=${session.sessionId}&scenario_id=${session.scenario?.id || 'free'}`, { method: 'POST' })
+      const resp = await fetch('/api/session/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          conversation_id: conversationId,
+          scenario_id: session.scenario?.id || 'salary',
+          practice_side: session.practiceSide?.id
+        })
+      })
       const result = await resp.json()
-      setAnalysis(result)
+      setAnalysis(resp.ok ? result : ({ error: result.error || result.detail || 'Analyse fehlgeschlagen' } as Analysis))
       setSession(s => ({ ...s, status: 'done' }))
-    } catch (err: any) {
-      setAnalysis({ error: err.message } as Analysis)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Analyse fehlgeschlagen'
+      setAnalysis({ error: message } as Analysis)
       setSession(s => ({ ...s, status: 'done' }))
     }
-  }, [session.sessionId])
+  }, [session.conversationId, session.sessionId, session.scenario?.id, session.practiceSide?.id])
 
   const reset = useCallback(() => {
     setSession({ status: 'selecting' })
@@ -139,7 +145,7 @@ export default function CoachAvatar() {
         <div className="coach-placeholder coach-error">
           <AlertCircle size={48} />
           <h2>Setup-Fehler</h2>
-          <p>Der Coach konnte nicht initialisiert werden.</p>
+          <p>Tavus ist nicht konfiguriert oder aktuell nicht erreichbar.</p>
           <button onClick={() => window.location.reload()}>Neu laden</button>
         </div>
       </div>
@@ -148,40 +154,54 @@ export default function CoachAvatar() {
 
   // ---- SCENARIO SELECTION ----
   if (session.status === 'selecting') {
-    const categories = [...new Set(scenarios.map(s => s.category))]
+    const selectedScenario = scenarios.find(s => s.id === selectedScenarioId) || scenarios[0]
+    const selectedSide = selectedScenario?.practice_sides.find(side => side.id === selectedSideId) || selectedScenario?.practice_sides[0]
     return (
       <div className="coach-container">
         <div className="coach-placeholder" style={{ borderStyle: 'solid' }}>
           <Grid3X3 size={40} />
-          <h2>Trainingsszenario wählen</h2>
-          <p>Wähle eine Gesprächssituation — der Avatar spielt die Rolle deines Gegenübers. Nach dem Gespräch erhältst du eine detaillierte Analyse.</p>
-          <div style={{ position: 'relative', marginTop: 8 }}>
-            <button
-              ref={triggerRef}
-              className="coach-start-btn"
-              onClick={() => setMenuOpen(o => !o)}
-            >
-              Szenario auswählen <ChevronDown size={14} style={{ transition: 'transform .15s', transform: menuOpen ? 'rotate(180deg)' : 'rotate(0)' }} />
-            </button>
-            {menuOpen && (
-              <div ref={menuRef} className="scenario-dropdown">
-                {categories.map(cat => (
-                  <div key={cat}>
-                    <div className="dropdown-category">{cat}</div>
-                    {scenarios.filter(s => s.category === cat).map(s => (
-                      <button
-                        key={s.id}
-                        className="dropdown-item"
-                        onClick={() => startCoaching(s)}
-                      >
-                        {s.title}
-                      </button>
-                    ))}
-                  </div>
+          <h2>Demo-Szenario wählen</h2>
+          <p>Wähle eines der zwei fokussierten Trainings und danach die Rolle, die du selbst üben möchtest.</p>
+
+          <div className="demo-scenario-grid">
+            {scenarios.map(s => (
+              <button
+                key={s.id}
+                className={`scenario-choice ${selectedScenario?.id === s.id ? 'active' : ''}`}
+                onClick={() => {
+                  setSelectedScenarioId(s.id)
+                  setSelectedSideId(s.practice_sides[0]?.id || '')
+                }}
+              >
+                <strong>{s.title}</strong>
+                <span>{s.description}</span>
+              </button>
+            ))}
+          </div>
+
+          {selectedScenario && selectedSide && (
+            <div className="role-panel">
+              <div className="role-panel-title">Welche Seite möchtest du trainieren?</div>
+              <div className="role-options">
+                {selectedScenario.practice_sides.map(side => (
+                  <button
+                    key={side.id}
+                    className={`role-option ${selectedSide.id === side.id ? 'active' : ''}`}
+                    onClick={() => setSelectedSideId(side.id)}
+                  >
+                    <strong>{side.label}</strong>
+                    <span>{side.user_goal}</span>
+                  </button>
                 ))}
               </div>
-            )}
-          </div>
+              <button
+                className="coach-start-btn"
+                onClick={() => startCoaching(selectedScenario, selectedSide)}
+              >
+                <PlayCircle size={18} /> Training starten
+              </button>
+            </div>
+          )}
         </div>
       </div>
     )
@@ -195,6 +215,7 @@ export default function CoachAvatar() {
           <Loader2 className="spinner-icon" size={48} />
           <h2>Session wird erstellt…</h2>
           <p>Szenario: {session.scenario?.title}</p>
+          <p>Trainierte Rolle: {session.practiceSide?.label}</p>
         </div>
       </div>
     )
@@ -212,9 +233,9 @@ export default function CoachAvatar() {
                 {session.scenario?.title || 'Live Coaching'}
               </h2>
               <p className="coach-scenario-hint">
-                Ziel: {session.scenario?.user_goal}
+                Ziel: {session.practiceSide?.user_goal}
                 <br />
-                Der Avatar ist bereits in seiner Rolle. Sprich einfach natürlich — wie im echten Leben.
+                Deine Rolle: {session.practiceSide?.label}. Der Avatar spielt konsequent die Gegenseite.
               </p>
             </div>
             <button
@@ -232,7 +253,7 @@ export default function CoachAvatar() {
             <iframe
               src={session.embedUrl}
               allow="microphone; camera"
-              title="LiveAvatar Coach"
+              title="Tavus Coach"
               className="coach-iframe"
             />
           </div>

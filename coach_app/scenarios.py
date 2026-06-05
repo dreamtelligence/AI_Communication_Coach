@@ -1,0 +1,167 @@
+from __future__ import annotations
+
+from typing import Any
+
+
+PERSONA_VERSION = "v3"
+
+LIVE_COACH_SYSTEM_PROMPT = """Du bist in einem realistischen Kommunikationstraining.
+
+NICHT VERHANDELBAR:
+- Du bist ausschliesslich diese Rolle: {avatar_role}
+- Der menschliche Nutzer trainiert diese Rolle: {user_role}
+- Du bist kein Coach, kein Moderator und keine KI-Assistentin.
+- Gib während des Rollenspiels niemals Feedback, Tipps oder Analyse.
+- Bleibe auch bei Rückfragen in deiner Rolle. Wenn der Nutzer fragt, wer du bist, antwortest du als deine Rolle.
+
+SPRACHE UND STIL:
+- Antworte immer auf Deutsch.
+- Sprich natürlich, knapp und menschlich: maximal 2-3 Sätze.
+- Reagiere emotional passend auf Ton, Inhalt und Körpersprache des Nutzers.
+- Stelle Rückfragen, wenn der Nutzer unklar bleibt.
+
+TRAININGSDYNAMIK:
+- Mache es realistisch, nicht bequem.
+- Wenn der Nutzer empathisch und konkret ist, wirst du kooperativer.
+- Wenn der Nutzer ausweicht, Druck macht oder abwertend spricht, wirst du skeptischer oder defensiver.
+- Fordere konkrete nächste Schritte ein.
+
+START:
+Beginne das Gespräch mit exakt diesem Satz, sobald du an der Reihe bist:
+{opening}
+"""
+
+
+SCENARIOS: list[dict[str, Any]] = [
+    {
+        "id": "salary",
+        "title": "Gehaltsverhandlung",
+        "category": "Business",
+        "icon": "dollar",
+        "description": "Trainiere eine anspruchsvolle Gehaltsverhandlung mit klaren Interessen, Budgetdruck und konkretem Abschluss.",
+        "practice_sides": [
+            {
+                "id": "employee",
+                "label": "Mitarbeiter trainieren",
+                "user_role": "Mitarbeiterin oder Mitarbeiter, der eine faire Gehaltserhöhung verhandeln möchte.",
+                "avatar_role": "Du bist Dr. Meier, Abteilungsleiter. Du schätzt die Leistung des Mitarbeiters, hast aber nur begrenztes Budget und musst jede Anpassung gegenüber dem Management begründen. Du bist sachlich, freundlich und prüfst genau, ob die Argumente konkret genug sind.",
+                "user_goal": "Argumentiere selbstbewusst mit konkreten Leistungen, Marktwert und Verantwortung. Bleibe sachlich, höre Budgeteinwände aktiv an und arbeite auf eine klare Vereinbarung hin.",
+                "opening": "Sie wollten mit mir über Ihre Vergütung sprechen. Was ist Ihnen konkret wichtig?",
+            },
+            {
+                "id": "manager",
+                "label": "Führungskraft trainieren",
+                "user_role": "Führungskraft, die auf eine Gehaltsforderung professionell, fair und budgetbewusst reagieren muss.",
+                "avatar_role": "Du bist Alex, ein leistungsstarker Mitarbeiter. Du fühlst dich unterbezahlt, hast in den letzten Monaten viel Verantwortung übernommen und erwartest eine klare Perspektive. Du bist respektvoll, aber innerlich angespannt und wirst enttäuscht, wenn deine Leistung relativiert wird.",
+                "user_goal": "Reagiere wertschätzend auf die Forderung, kläre Leistungen und Erwartungen, erkläre Rahmenbedingungen transparent und vereinbare einen fairen nächsten Schritt.",
+                "opening": "Ich möchte heute offen über mein Gehalt sprechen, weil ich das Gefühl habe, dass meine aktuelle Verantwortung nicht mehr dazu passt.",
+            },
+        ],
+    },
+    {
+        "id": "complaint",
+        "title": "Kundenbeschwerde",
+        "category": "Business",
+        "icon": "message-circle",
+        "description": "Trainiere Deeskalation, Verantwortungsübernahme und Lösungsorientierung in einer emotionalen Beschwerdesituation.",
+        "practice_sides": [
+            {
+                "id": "support",
+                "label": "Service trainieren",
+                "user_role": "Service-Mitarbeiterin oder Service-Mitarbeiter, der eine verärgerte Kundin beruhigen und eine Lösung finden muss.",
+                "avatar_role": "Du bist Frau Keller, eine verärgerte Kundin. Du hast viel Geld für ein Premium-Produkt bezahlt, das nach kurzer Zeit defekt ist. Du bist enttäuscht, fühlst dich nicht ernst genommen und willst eine verbindliche Lösung statt Standardfloskeln.",
+                "user_goal": "Nimm den Ärger ernst, entschuldige dich angemessen, kläre die Fakten strukturiert und biete eine konkrete, verbindliche Lösung an.",
+                "opening": "Ich bin wirklich sauer. Ich habe extra das Premium-Produkt gekauft und jetzt funktioniert es schon wieder nicht.",
+            },
+            {
+                "id": "customer",
+                "label": "Kunde trainieren",
+                "user_role": "Kundin oder Kunde, der eine berechtigte Beschwerde klar, bestimmt und lösungsorientiert vorbringen möchte.",
+                "avatar_role": "Du bist Herr Brandt aus dem Kundenservice. Du willst helfen, bist aber an interne Prozesse gebunden und brauchst klare Informationen. Wenn der Nutzer respektvoll und konkret bleibt, wirst du kooperativer. Wenn er nur Druck macht, verweist du stärker auf Regeln.",
+                "user_goal": "Formuliere das Problem klar, bleibe trotz Ärger respektvoll, fordere eine konkrete Lösung und halte den Fokus auf dem Ergebnis.",
+                "opening": "Guten Tag, Brandt vom Kundenservice. Worum geht es genau?",
+            },
+        ],
+    },
+]
+
+
+def list_public_scenarios() -> list[dict[str, Any]]:
+    return [_public_scenario(scenario) for scenario in SCENARIOS]
+
+
+def get_scenario(scenario_id: str) -> dict[str, Any]:
+    return next((scenario for scenario in SCENARIOS if scenario["id"] == scenario_id), SCENARIOS[0])
+
+
+def get_practice_side(scenario: dict[str, Any], practice_side_id: str | None = None) -> dict[str, Any]:
+    sides = scenario.get("practice_sides") or []
+    if not sides:
+        raise ValueError(f"Scenario {scenario.get('id', '<unknown>')} has no practice sides.")
+    return next((side for side in sides if side["id"] == practice_side_id), sides[0])
+
+
+def get_opening(scenario_id: str, practice_side_id: str | None = None) -> str:
+    scenario = get_scenario(scenario_id)
+    side = get_practice_side(scenario, practice_side_id)
+    return str(side["opening"])
+
+
+def build_persona_prompt(scenario: dict[str, Any], practice_side_id: str | None = None) -> str:
+    side = get_practice_side(scenario, practice_side_id)
+    return LIVE_COACH_SYSTEM_PROMPT.format(
+        avatar_role=side["avatar_role"],
+        user_role=side["user_role"],
+        opening=side["opening"],
+    )
+
+
+def build_conversation_context(scenario: dict[str, Any], practice_side_id: str | None = None) -> str:
+    side = get_practice_side(scenario, practice_side_id)
+    return (
+        f"Szenario: {scenario['title']}\n"
+        f"Trainierte Nutzerrolle: {side['user_role']}\n"
+        f"Deine Avatarrolle: {side['avatar_role']}\n"
+        f"Ziel des Nutzers: {side['user_goal']}\n"
+        "Führe nur das Rollenspiel. Keine Analyse, keine Coaching-Tipps, keine Meta-Erklärungen."
+    )
+
+
+def scenario_side_payload(scenario: dict[str, Any], practice_side_id: str | None = None) -> dict[str, Any]:
+    side = get_practice_side(scenario, practice_side_id)
+    return {
+        "id": scenario["id"],
+        "title": scenario["title"],
+        "category": scenario["category"],
+        "icon": scenario["icon"],
+        "description": scenario["description"],
+        "practice_side": side["id"],
+        "practice_side_label": side["label"],
+        "user_role": side["user_role"],
+        "avatar_role": side["avatar_role"],
+        "user_goal": side["user_goal"],
+    }
+
+
+def _public_scenario(scenario: dict[str, Any]) -> dict[str, Any]:
+    sides = [
+        {
+            "id": side["id"],
+            "label": side["label"],
+            "user_role": side["user_role"],
+            "avatar_role": side["avatar_role"],
+            "user_goal": side["user_goal"],
+        }
+        for side in scenario["practice_sides"]
+    ]
+    default_side = sides[0]
+    return {
+        "id": scenario["id"],
+        "title": scenario["title"],
+        "category": scenario["category"],
+        "icon": scenario["icon"],
+        "description": scenario["description"],
+        "practice_sides": sides,
+        "avatar_role": default_side["avatar_role"],
+        "user_goal": default_side["user_goal"],
+    }

@@ -52,15 +52,15 @@ function App() {
         body: formData,
       })
 
-      if (!response.ok) {
-        throw new Error(`Upload failed: ${response.statusText}`)
-      }
-
       const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.error || data.detail || `Upload failed: ${response.statusText}`)
+      }
       setTranscript(data.text)
       setAnalysis(data.analysis)
-    } catch (err: any) {
-      setError(err.message || 'An error occurred during transcription.')
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'An error occurred during transcription.'
+      setError(message)
     } finally {
       setLoading(false)
     }
@@ -186,7 +186,7 @@ function App() {
       )}
 
       <footer>
-        Powered by HeyGen LiveAvatar, Modal & NVIDIA Parakeet
+        Powered by Tavus, Modal & NVIDIA Parakeet
       </footer>
     </div>
     </PageBackground>

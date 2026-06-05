@@ -12,7 +12,7 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/api': 'https://aliundmaggy--talktome-asr-web-v2-fastapi-app.modal.run'
+      '/api': process.env.VITE_API_PROXY_TARGET || 'https://aliundmaggy--asr-coaching-analysis-fastapi-app.modal.run'
     }
   }
 })

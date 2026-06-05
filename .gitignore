@@ -2,6 +2,12 @@ __pycache__/
 modal_env/
 node_modules/
 scratch/
+dist/
+frontend/dist/
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
 .DS_Store
 *.pyc
 .env.local
