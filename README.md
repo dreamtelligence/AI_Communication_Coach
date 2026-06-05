@@ -84,6 +84,35 @@ Scores + Feedback + Transcript
 
 ---
 
+## Studio Impressions
+
+<details>
+<summary><strong>CoachVoice Screenshots</strong> — role selection, Tavus join flow, live avatar, and coaching analysis</summary>
+
+### Role Selection
+Focused demo entry with two scenarios and two trainable sides per scenario.
+
+![CoachVoice role selection](docs/images/coachvoice-rollen-auswahl.png)
+
+### Tavus Name Entry
+Embedded Tavus room before the user joins the live coaching session.
+
+![CoachVoice Tavus name entry](docs/images/coachvoice-name-entry.png)
+
+### Live Avatar Session
+Real-time Tavus avatar roleplay inside the CoachVoice interface.
+
+![CoachVoice live avatar session](docs/images/coachvoice-live-avatar.png)
+
+### Coaching Analysis
+Post-call scoring with empathy, clarity, result orientation, summary, and transcript access.
+
+![CoachVoice coaching analysis](docs/images/coachvoice-analysis.png)
+
+</details>
+
+---
+
 ## Scenarios
 
 ### Gehaltsverhandlung
