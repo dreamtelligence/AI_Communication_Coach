@@ -1,6 +1,6 @@
 # CoachVoice — AI Communication Coach
 
-**[👉 Live Demo on Modal](https://aliundmaggy--asr-coaching-analysis-fastapi-app.modal.run/)**
+**[👉 Live Demo](https://coach.dreamtelligence.de)**
 
 ![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-API-009688?logo=fastapi&logoColor=white)
