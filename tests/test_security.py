@@ -45,5 +45,31 @@ class ClientIpTests(unittest.TestCase):
         self.assertEqual(security.client_ip(_request({})), "10.0.0.1")
 
 
+class RateLimiterTests(unittest.TestCase):
+    def _req(self, path: str, ip: str) -> mock.Mock:
+        request = _request({"x-forwarded-for": ip})
+        request.url = mock.Mock(path=path)
+        return request
+
+    def test_global_cap_holds_even_with_spoofed_ips(self) -> None:
+        limiter = security.InMemoryRateLimiter(limit=40, window_seconds=60, global_limits={"/api/session/create": 3})
+        for i in range(3):
+            limiter.check(self._req("/api/session/create", f"198.51.100.{i}"))
+        with self.assertRaises(HTTPException) as ctx:
+            limiter.check(self._req("/api/session/create", "198.51.100.99"))
+        self.assertEqual(ctx.exception.status_code, 429)
+
+    def test_other_paths_are_not_globally_capped(self) -> None:
+        limiter = security.InMemoryRateLimiter(limit=40, window_seconds=60, global_limits={"/api/session/create": 1})
+        for i in range(5):
+            limiter.check(self._req("/api/scenarios", f"198.51.100.{i}"))
+
+    def test_stale_keys_are_evicted(self) -> None:
+        limiter = security.InMemoryRateLimiter(limit=40, window_seconds=60, global_limits={})
+        limiter._requests = {"old:/api/x": security.deque([0.0])}
+        limiter._evict(window_start=10.0)
+        self.assertEqual(limiter._requests, {})
+
+
 if __name__ == "__main__":
     unittest.main()

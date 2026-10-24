@@ -362,7 +362,10 @@ def run_setup(request: Request) -> dict:
     return result
 
 
-@app.function(image=image, secrets=_tavus_secrets())
+# One web container that serves many requests at once: keeps the in-memory rate limiter (incl. the global
+# cap on new Tavus sessions) authoritative instead of counting per autoscaled container.
+@app.function(image=image, secrets=_tavus_secrets(), max_containers=1)
+@modal.concurrent(max_inputs=50)
 @modal.asgi_app()
 def fastapi_app():
     web_app.mount("/", StaticFiles(directory="/assets", html=True), name="static")

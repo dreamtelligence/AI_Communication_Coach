@@ -37,24 +37,51 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         return response
 
 
+# Hard cap per path for all visitors together. Protects the Tavus budget even if X-Forwarded-For is spoofed
+# (direct calls to the modal.run URL). The web app runs in a single container (max_containers=1), so this is global.
+GLOBAL_PATH_LIMITS = {
+    "/api/session/create": int(os.environ.get("SESSION_CREATE_GLOBAL_LIMIT", "10")),
+}
+MAX_TRACKED_KEYS = 5000
+
+
 class InMemoryRateLimiter:
-    def __init__(self, limit: int = API_RATE_LIMIT, window_seconds: int = API_RATE_WINDOW_SECONDS) -> None:
+    def __init__(
+        self,
+        limit: int = API_RATE_LIMIT,
+        window_seconds: int = API_RATE_WINDOW_SECONDS,
+        global_limits: dict[str, int] | None = None,
+    ) -> None:
         self.limit = limit
         self.window_seconds = window_seconds
+        self.global_limits = GLOBAL_PATH_LIMITS if global_limits is None else global_limits
         self._requests: dict[str, deque[float]] = {}
 
     def check(self, request: Request) -> None:
-        if not request.url.path.startswith("/api/"):
+        path = request.url.path
+        if not path.startswith("/api/"):
             return
         now = time.monotonic()
-        key = f"{client_ip(request)}:{request.url.path}"
         window_start = now - self.window_seconds
-        existing = self._requests.get(key, deque())
-        current = deque(timestamp for timestamp in existing if timestamp >= window_start)
-        if len(current) >= self.limit:
-            raise HTTPException(status_code=429, detail="Rate limit exceeded. Please try again later.")
-        current.append(now)
-        self._requests = {**self._requests, key: current}
+        if len(self._requests) > MAX_TRACKED_KEYS:
+            self._evict(window_start)
+
+        keys_and_limits = [(f"{client_ip(request)}:{path}", self.limit)]
+        if path in self.global_limits:
+            keys_and_limits.append((f"*:{path}", self.global_limits[path]))
+
+        windows = {}
+        for key, limit in keys_and_limits:
+            current = deque(t for t in self._requests.get(key, deque()) if t >= window_start)
+            if len(current) >= limit:
+                raise HTTPException(status_code=429, detail="Rate limit exceeded. Please try again later.")
+            windows[key] = current
+        for key, current in windows.items():
+            current.append(now)
+        self._requests = {**self._requests, **windows}
+
+    def _evict(self, window_start: float) -> None:
+        self._requests = {key: q for key, q in self._requests.items() if q and q[-1] >= window_start}
 
 
 def client_ip(request: Request) -> str:
