@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { StopCircle, Loader2, AlertCircle, CheckCircle2, RefreshCw, Grid3X3, PlayCircle } from 'lucide-react'
 import RadialGauge from '@/components/RadialGauge'
 
@@ -40,6 +40,9 @@ interface Analysis {
   result_feedback: string
   summary: string
   transcript?: string
+  better_phrasings?: { original: string; better: string; why: string }[]
+  counterpart_journey?: string
+  asr_notes?: string[]
   error?: string
   note?: string
 }
@@ -121,6 +124,29 @@ export default function CoachAvatar() {
       setSession(s => ({ ...s, status: 'done' }))
     }
   }, [session.conversationId, session.sessionId, session.scenario?.id, session.practiceSide?.id])
+
+  // The PAL can hang up itself (Tavus end_call). Poll the status and start the analysis automatically.
+  const autoAnalyzeStarted = useRef(false)
+  useEffect(() => {
+    if (session.status !== 'active' || !session.conversationId) return
+    autoAnalyzeStarted.current = false
+    const conversationId = session.conversationId
+    const timer = window.setInterval(async () => {
+      try {
+        const resp = await fetch(`/api/session/${conversationId}/status`)
+        if (!resp.ok) return
+        const data = await resp.json()
+        if (data.status === 'ended' && !autoAnalyzeStarted.current) {
+          autoAnalyzeStarted.current = true
+          window.clearInterval(timer)
+          stopAndAnalyze()
+        }
+      } catch {
+        // network hiccup: try again on the next tick
+      }
+    }, 5000)
+    return () => window.clearInterval(timer)
+  }, [session.status, session.conversationId, stopAndAnalyze])
 
   const reset = useCallback(() => {
     setSession({ status: 'selecting' })
@@ -252,7 +278,7 @@ export default function CoachAvatar() {
           <div className="coach-iframe-wrapper">
             <iframe
               src={session.embedUrl}
-              allow="microphone; camera"
+              allow="microphone; camera; autoplay; fullscreen; display-capture"
               title="Tavus Coach"
               className="coach-iframe"
             />
@@ -260,7 +286,7 @@ export default function CoachAvatar() {
           <div className="coach-tips">
             <p>
               <strong>Tipp:</strong> Erlaube Mikrofon-Zugriff. Der Avatar ist bereits in der richtigen Rolle — sprich einfach
-              natürlich, wie du es im echten Leben tun würdest. Klicke "Beenden & Analysieren", wenn das Gespräch fertig ist.
+              natürlich, wie du es im echten Leben tun würdest. Verabschiedet ihr euch, legt der Avatar auf und die Analyse startet automatisch. Du kannst auch jederzeit "Beenden & Analysieren" klicken.
             </p>
           </div>
         </div>
@@ -301,6 +327,35 @@ export default function CoachAvatar() {
                 <h3>Zusammenfassung</h3>
                 <p>{analysis?.summary}</p>
               </div>
+
+              {analysis?.counterpart_journey && (
+                <div className="summary-section">
+                  <h3>Verlauf beim Gegenüber</h3>
+                  <p>{analysis.counterpart_journey}</p>
+                </div>
+              )}
+
+              {analysis?.better_phrasings && analysis.better_phrasings.length > 0 && (
+                <div className="summary-section">
+                  <h3>So hätten Sie es sagen können</h3>
+                  {analysis.better_phrasings.map((p, i) => (
+                    <div key={i} style={{ marginBottom: 14 }}>
+                      <p style={{ color: 'var(--text-secondary)', textDecoration: 'line-through' }}>„{p.original}“</p>
+                      <p><strong>„{p.better}“</strong></p>
+                      {p.why && <p style={{ color: 'var(--text-secondary)', fontSize: '0.9em' }}>{p.why}</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {analysis?.asr_notes && analysis.asr_notes.length > 0 && (
+                <div className="coach-tips" style={{ marginTop: 16 }}>
+                  <p>
+                    <strong>Vermutlich falsch erkannt (nicht bewertet):</strong>{' '}
+                    {analysis.asr_notes.join(' · ')}
+                  </p>
+                </div>
+              )}
 
               {analysis?.transcript && (
                 <details style={{ marginTop: 20 }}>

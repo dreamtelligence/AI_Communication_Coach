@@ -4,7 +4,7 @@ from typing import Any
 
 
 USER_SPEAKERS = {"user", "human", "nutzer", "you", "participant", "ich", "guest"}
-AVATAR_SPEAKERS = {"assistant", "avatar", "replica", "ai", "bot"}
+AVATAR_SPEAKERS = {"assistant", "avatar", "replica", "pal", "ai", "bot"}
 SYSTEM_SPEAKERS = {"system", "developer", "tool"}
 
 

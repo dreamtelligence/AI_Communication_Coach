@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import os
+import re
 import time
 
 import modal
+import requests
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -31,10 +33,10 @@ from coach_app.tavus_client import (
     TavusError,
     create_conversation,
     end_conversation,
-    ensure_persona,
+    ensure_pal,
     get_conversation,
     is_configured,
-    setup_personas,
+    setup_pals,
 )
 from coach_app.transcript import transcript_from_tavus_conversation
 from coach_app.transcript import parse_transcript
@@ -44,11 +46,11 @@ app = modal.App("asr-coaching-analysis")
 
 MODAL_NAME = "nvidia/parakeet-tdt-0.6b-v2"
 CUDA_TAG = "12.4.1-devel-ubuntu22.04"
-DEFAULT_REPLICA_ID = "r90bbd427f71"
 CACHE_DIR = "/cache"
 
 nemo_cache = modal.Volume.from_name("nemo-model-cache", create_if_missing=True)
-persona_cache: dict[str, str] = {}
+pal_cache: dict[str, str] = {}
+CONVERSATION_ID_PATTERN = re.compile(r"[a-z0-9]{8,64}")
 
 image = (
     modal.Image.from_registry(f"nvidia/cuda:{CUDA_TAG}", add_python="3.12")
@@ -82,10 +84,6 @@ def _tavus_api_key() -> str | None:
 
 def _gemini_api_key() -> str | None:
     return os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
-
-
-def _replica_id() -> str:
-    return os.environ.get("TAVUS_DEFAULT_REPLICA_ID", DEFAULT_REPLICA_ID)
 
 
 @app.cls(gpu="L40S", image=image, timeout=600, scaledown_window=60, volumes={CACHE_DIR: nemo_cache})
@@ -146,6 +144,28 @@ def _run_analysis_prompt(prompt: str) -> dict:
     gemini_key = _gemini_api_key()
     provider_errors: list[str] = []
 
+    if gemini_key:
+        gemini_error: str | None = None
+        for attempt in range(2):  # Gemini occasionally returns malformed JSON; one retry is enough
+            raw = ""
+            try:
+                raw = generate_with_gemini(gemini_key, prompt, os.environ.get("GEMINI_MODEL", GEMINI_MODEL))
+                result = parse_analysis_json(raw)
+                result["provider"] = "gemini"
+                return result
+            except AnalysisProviderError as exc:
+                gemini_error = str(exc)
+                break
+            except requests.RequestException as exc:
+                # log only the error type: request errors can carry URLs, model output can carry user content
+                print(f"Gemini request failed (attempt {attempt + 1}): {type(exc).__name__}")
+                gemini_error = "Analyse nicht verfügbar: Gemini ist gerade nicht erreichbar."
+            except (ValueError, TypeError) as exc:
+                print(f"Gemini returned invalid analysis JSON (attempt {attempt + 1}): {type(exc).__name__}, len={len(raw)}")
+                gemini_error = "Analyse nicht verfügbar: Gemini konnte keine gültige JSON-Analyse liefern."
+        if gemini_error:
+            provider_errors.append(gemini_error)
+
     if deepseek_key:
         client = OpenAI(api_key=deepseek_key, base_url=DEEPSEEK_BASE_URL)
         try:
@@ -160,17 +180,6 @@ def _run_analysis_prompt(prompt: str) -> dict:
         except Exception as exc:
             provider_errors.append(deepseek_error_message(exc))
 
-    if gemini_key:
-        try:
-            raw = generate_with_gemini(gemini_key, prompt, os.environ.get("GEMINI_MODEL", GEMINI_MODEL))
-            result = parse_analysis_json(raw)
-            result["provider"] = "gemini"
-            return result
-        except AnalysisProviderError as exc:
-            provider_errors.append(str(exc))
-        except Exception:
-            provider_errors.append("Analyse nicht verfügbar: Gemini konnte keine gültige JSON-Analyse liefern.")
-
     if provider_errors:
         return {"error": " ".join(provider_errors)}
     return {"error": "Analyse-Service ist nicht konfiguriert. Hinterlege `DEEPSEEK_API_KEY` oder `GEMINI_API_KEY` in Modal."}
@@ -178,37 +187,35 @@ def _run_analysis_prompt(prompt: str) -> dict:
 
 @app.function(image=image, secrets=_tavus_secrets())
 def setup_tavus_resources() -> dict:
-    global persona_cache
+    global pal_cache
 
     api_key = _tavus_api_key()
-    replica_id = _replica_id()
-    if not is_configured(api_key, replica_id):
+    if not is_configured(api_key):
         return {"error": "Tavus is not configured."}
     try:
-        persona_cache = setup_personas(api_key or "", replica_id, SCENARIOS)
-        return {"status": "ready", "persona_count": len(persona_cache)}
+        pal_cache = setup_pals(api_key or "", SCENARIOS)
+        return {"status": "ready", "pal_count": len(pal_cache)}
     except TavusError as exc:
         return {"error": str(exc)}
 
 
 @app.function(image=image, secrets=_tavus_secrets())
 def create_tavus_session(scenario_id: str = "salary", practice_side: str | None = None, sandbox: bool = False) -> dict:
-    global persona_cache
+    global pal_cache
 
     api_key = _tavus_api_key()
-    replica_id = _replica_id()
-    if not is_configured(api_key, replica_id):
+    if not is_configured(api_key):
         return {"error": "Tavus is not configured."}
 
     scenario = get_scenario(scenario_id)
     side = get_practice_side(scenario, practice_side)
     try:
         cache_key = f"{scenario['id']}:{side['id']}"
-        persona_id = persona_cache.get(cache_key)
-        if not persona_id:
-            persona_id = ensure_persona(api_key or "", replica_id, scenario, side["id"])
-            persona_cache = {**persona_cache, cache_key: persona_id}
-        conversation = create_conversation(api_key or "", replica_id, persona_id, scenario, side["id"], sandbox=sandbox)
+        pal_id = pal_cache.get(cache_key)
+        if not pal_id:
+            pal_id = ensure_pal(api_key or "", scenario, side["id"])
+            pal_cache = {**pal_cache, cache_key: pal_id}
+        conversation = create_conversation(api_key or "", pal_id, scenario, side["id"], sandbox=sandbox)
     except TavusError as exc:
         return {"error": str(exc)}
 
@@ -302,7 +309,7 @@ def list_scenarios() -> dict:
 
 @web_app.get("/api/session/status")
 def session_status() -> dict:
-    return {"configured": is_configured(_tavus_api_key(), _replica_id()), "provider": "tavus"}
+    return {"configured": is_configured(_tavus_api_key()), "provider": "tavus"}
 
 
 @web_app.post("/api/session/create")
@@ -315,6 +322,21 @@ def create_session(payload: CreateSessionRequest) -> dict:
     if "error" in result:
         raise HTTPException(status_code=502, detail=result["error"])
     return result
+
+
+@web_app.get("/api/session/{conversation_id}/status")
+def conversation_status(conversation_id: str) -> dict:
+    """Lets the frontend notice when the PAL ended the call itself (end_call)."""
+    if not CONVERSATION_ID_PATTERN.fullmatch(conversation_id):
+        raise HTTPException(status_code=400, detail="Invalid conversation id.")
+    api_key = _tavus_api_key()
+    if not api_key:
+        raise HTTPException(status_code=503, detail="Tavus is not configured.")
+    try:
+        conversation = get_conversation(api_key, conversation_id, verbose=False)
+    except TavusError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    return {"status": conversation.get("status", "unknown")}
 
 
 @web_app.post("/api/session/analyze")

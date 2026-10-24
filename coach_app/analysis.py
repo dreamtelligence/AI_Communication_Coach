@@ -11,16 +11,13 @@ from coach_app.transcript import parse_transcript
 
 DEEPSEEK_MODEL = "deepseek-chat"
 DEEPSEEK_BASE_URL = "https://api.deepseek.com"
-GEMINI_MODEL = "gemini-2.5-flash"
+# gemini-3.5-flash with low thinking: ~4s and stable. gemini-3.8-flash took 40-120s+ in tests (24.10.2026).
+GEMINI_MODEL = "gemini-3.5-flash"
 GEMINI_FALLBACK_MODELS = (
-    "gemini-3.5-flash",
-    "gemini-3.1-flash-lite",
-    "gemini-2.0-flash",
-    "gemini-2.0-flash-lite",
-    "gemini-2.5-flash-lite",
+    "gemini-2.5-flash",
 )
 GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta"
-REQUEST_TIMEOUT = 30
+REQUEST_TIMEOUT = 45
 
 
 class AnalysisProviderError(RuntimeError):
@@ -37,7 +34,7 @@ def build_analysis_prompt(text: str, scenario_id: str = "salary", practice_side_
     user_text = parsed["user_only"] or "(Keine Nutzer-Aussagen identifiziert.)"
     avatar_text = parsed["avatar_only"] or "(Keine Avatar-Aussagen identifiziert.)"
     clean_transcript = parsed["full_transcript"] or "(Keine auswertbare Unterhaltung identifiziert.)"
-    return f"""Analysiere ein Live-Coaching-Rollenspiel.
+    return f"""Analysiere ein Live-Rollenspiel aus einem Kommunikationstraining.
 
 SZENARIO: {scenario["title"]}
 TRAINIERTE ROLLE DES NUTZERS: {side["user_role"]}
@@ -50,17 +47,34 @@ DER KI-AVATAR sagte:
 DER MENSCHLICHE NUTZER, der bewertet wird, sagte:
 {user_text}
 
-VOLLSTAENDIGES TRANSKRIPT:
-{clean_transcript[:4000]}
+VOLLSTÄNDIGES TRANSKRIPT:
+{clean_transcript[:6000]}
 
-Bewerte ausschliesslich den menschlichen Nutzer nach:
-1. Empathie und emotionale Intelligenz (1-10)
-2. Sprachliche Klarheit und Struktur (1-10)
-3. Ergebnisorientierung und Zielführung (1-10)
+WICHTIG ZUM TRANSKRIPT
+- Die Nutzer-Aussagen stammen aus einer automatischen Spracherkennung. Einzelne Wörter können falsch erkannt sein.
+- Bestimme ZUERST die vermutlich falsch erkannten Aussagen: Sätze, die unsinnig wirken, nicht in den Zusammenhang passen oder auf die
+  das Gegenüber verwirrt reagiert. Nimm sie in "asr_notes" auf und nenne, was vermutlich gemeint war.
+- Aussagen aus "asr_notes" fließen in KEINEN Score, kein Feedback und keine Umformulierung ein. Bewerte an ihrer Stelle die vermutlich
+  gemeinte Aussage. Reagiert das Gegenüber auf einen Erkennungsfehler, ist das nicht die Schuld des Nutzers.
+- Füllwörter und abgebrochene Sätze gehören zu gesprochener Sprache. Bewerte sie nur, wenn sie das Gespräch spürbar schwächen.
+- Ein KI-Hinweis des Avatars am Anfang („Ich bin ein KI-Avatar…“) gehört nicht zum Rollenspiel.
 
-Jeder Score muss mit mindestens einem wörtlichen Zitat des Nutzers belegt werden.
+BEWERTE AUSSCHLIESSLICH DEN MENSCHLICHEN NUTZER (je 1-10)
+1. Empathie und emotionale Intelligenz
+   2-3: ignoriert oder verharmlost Gefühle  |  5-6: erkennt Gefühle an, aber floskelhaft  |  8-9: benennt Gefühle konkret, entschuldigt sich passend, Gegenüber fühlt sich ernst genommen
+2. Klarheit und Struktur
+   2-3: sprunghaft, unverständlich, ohne roten Faden  |  5-6: verständlich, aber vage oder unverbindlich  |  8-9: klar, strukturiert, fasst zusammen
+3. Ergebnisorientierung
+   2-3: kein Ergebnis  |  5-6: Lösung angedeutet, aber ohne konkrete Zusagen  |  8-9: verbindliche Vereinbarung mit konkreten nächsten Schritten
+Belege jeden Score mit mindestens einem wörtlichen Zitat des Nutzers. Sei ehrlich, aber fair, und sprich den Nutzer mit „Sie“ an.
+
+ZUSÄTZLICH
+- "better_phrasings": zwei bis drei echte Sätze des Nutzers, die am meisten Wirkung gekostet haben, jeweils mit einer besseren,
+  natürlich klingenden Formulierung und einem kurzen Grund. Keine falsch erkannten Sätze verwenden.
+- "counterpart_journey": in ein bis zwei Sätzen, wie sich die Stimmung des Gegenübers entwickelt hat und welche Nutzer-Aussage der Wendepunkt war.
+
 Gib nur JSON in dieser Form zurück:
-{{"empathy_score":7,"empathy_feedback":"...","clarity_score":6,"clarity_feedback":"...","result_score":8,"result_feedback":"...","summary":"..."}}"""
+{{"asr_notes":["..."],"empathy_score":7,"empathy_feedback":"...","clarity_score":6,"clarity_feedback":"...","result_score":8,"result_feedback":"...","summary":"...","better_phrasings":[{{"original":"...","better":"...","why":"..."}}],"counterpart_journey":"..."}}"""
 
 
 def build_fallback_prompt(scenario_id: str = "salary", practice_side_id: str | None = None) -> str:
@@ -95,6 +109,11 @@ def parse_analysis_json(raw: str) -> dict[str, Any]:
     parsed = json.loads(clean)
     if not isinstance(parsed, dict):
         raise ValueError("Analysis response was not a JSON object.")
+    asr_notes = (
+        [str(n) for n in parsed.get("asr_notes", []) if str(n).strip()][:5]
+        if isinstance(parsed.get("asr_notes"), list)
+        else []
+    )
     return {
         "empathy_score": _score(parsed.get("empathy_score")),
         "empathy_feedback": str(parsed.get("empathy_feedback", "")),
@@ -103,22 +122,56 @@ def parse_analysis_json(raw: str) -> dict[str, Any]:
         "result_score": _score(parsed.get("result_score")),
         "result_feedback": str(parsed.get("result_feedback", "")),
         "summary": str(parsed.get("summary", "")),
+        "better_phrasings": [
+            p for p in _phrasings(parsed.get("better_phrasings")) if not _mentioned_in(p["original"], asr_notes)
+        ],
+        "counterpart_journey": str(parsed.get("counterpart_journey", "")),
+        "asr_notes": asr_notes,
     }
+
+
+def _mentioned_in(sentence: str, notes: list[str]) -> bool:
+    """True if a (probably misrecognized) sentence is quoted in one of the ASR notes."""
+    def norm(text: str) -> str:
+        return " ".join("".join(ch for ch in text.lower() if ch.isalnum() or ch.isspace()).split())
+
+    needle = norm(sentence)[:40]
+    return bool(needle) and any(needle in norm(note) or norm(note).find(needle[:20]) >= 0 for note in notes)
+
+
+def _phrasings(raw: Any) -> list[dict[str, str]]:
+    if not isinstance(raw, list):
+        return []
+    items = []
+    for entry in raw[:3]:
+        if isinstance(entry, dict) and entry.get("original") and entry.get("better"):
+            items.append({
+                "original": str(entry["original"]),
+                "better": str(entry["better"]),
+                "why": str(entry.get("why", "")),
+            })
+    return items
+
+
+def _generation_config(model: str) -> dict[str, Any]:
+    config: dict[str, Any] = {"temperature": 0.25, "responseMimeType": "application/json"}
+    if model.startswith("gemini-3"):
+        config["thinkingConfig"] = {"thinkingLevel": "low"}  # Gemini 3.x; 2.5 uses thinkingBudget instead
+    return config
 
 
 def generate_with_gemini(api_key: str, prompt: str, model: str = GEMINI_MODEL) -> str:
     payload = {
         "systemInstruction": {"parts": [{"text": system_prompt()}]},
         "contents": [{"role": "user", "parts": [{"text": prompt}]}],
-        "generationConfig": {"temperature": 0.25, "responseMimeType": "application/json"},
     }
     models = _unique_models((model, *GEMINI_FALLBACK_MODELS))
     last_error: AnalysisProviderError | None = None
     for candidate_model in models:
         response = requests.post(
             f"{GEMINI_API_BASE}/models/{candidate_model}:generateContent",
-            params={"key": api_key},
-            json=payload,
+            headers={"x-goog-api-key": api_key},  # header, so the key never appears in URLs or exception texts
+            json={**payload, "generationConfig": _generation_config(candidate_model)},
             timeout=REQUEST_TIMEOUT,
         )
         if not response.ok:
