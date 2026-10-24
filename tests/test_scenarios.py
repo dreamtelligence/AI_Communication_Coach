@@ -19,7 +19,7 @@ class ScenarioPromptTests(unittest.TestCase):
         scenario = get_scenario("complaint")
         prompt = build_pal_prompt(scenario, "support")
 
-        self.assertEqual(PAL_VERSION, "v8")
+        self.assertEqual(PAL_VERSION, "v9")
         self.assertIn("Wiederhole dieselbe Forderung nicht mehrfach", prompt)
         self.assertIn("setzt du zuerst eine klare Grenze", prompt)
         self.assertIn("dass Details per E-Mail kommen, akzeptierst du diese Zusage", prompt)
