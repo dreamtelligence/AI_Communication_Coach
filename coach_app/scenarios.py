@@ -272,6 +272,7 @@ SCENARIOS: list[dict[str, Any]] = [
         "side_prompt": "Mit wem möchtest du dein Date üben?",
         "prompt_template": DATING_SYSTEM_PROMPT,
         "rubric": DATING_RUBRIC,
+        "feedback_address": "du",
         "stt_hotwords": (
             "Deutschsprachiges erstes Date über Videoanruf. Wichtige Begriffe: "
             "Date, Dating-App, Match, Lena, Jonas, Hamburg, Köln, Ehrenfeld, Altona, "

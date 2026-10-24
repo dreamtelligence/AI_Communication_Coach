@@ -63,7 +63,7 @@ WICHTIG ZUM TRANSKRIPT
 BEWERTE AUSSCHLIESSLICH DEN MENSCHLICHEN NUTZER (je 1-10)
 {rubric_text}
 Feld-Zuordnung im JSON: Kriterium 1 → empathy_score/empathy_feedback, Kriterium 2 → clarity_score/clarity_feedback, Kriterium 3 → result_score/result_feedback.
-Belege jeden Score mit mindestens einem wörtlichen Zitat des Nutzers. Sei ehrlich, aber fair, und sprich den Nutzer mit „Sie“ an.
+Belege jeden Score mit mindestens einem wörtlichen Zitat des Nutzers. Sei ehrlich, aber fair, und sprich den Nutzer mit „{scenario.get("feedback_address", "Sie")}“ an.
 
 ZUSÄTZLICH
 - "better_phrasings": zwei bis drei echte Sätze des Nutzers, die am meisten Wirkung gekostet haben, jeweils mit einer besseren,

@@ -95,6 +95,8 @@ class DatingScenarioTests(unittest.TestCase):
         self.assertIn("1. Echtes Interesse und Zuhören", dating)
         self.assertNotIn("Ergebnisorientierung", dating)
         self.assertIn("Kriterium 1 → empathy_score", dating)
+        self.assertIn("mit „du“ an", dating)
+        self.assertIn("mit „Sie“ an", business)
 
     def test_stt_hotwords_per_scenario(self) -> None:
         self.assertIn("Dating-App", get_stt_hotwords(get_scenario("dating")))
