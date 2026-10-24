@@ -26,6 +26,7 @@ interface SessionState {
   embedUrl?: string
   sessionId?: string
   conversationId?: string
+  sessionToken?: string
   scenario?: Scenario
   practiceSide?: PracticeSide
   error?: string
@@ -91,6 +92,7 @@ export default function CoachAvatar() {
         embedUrl: data.embed_url,
         sessionId: data.session_id,
         conversationId: data.conversation_id,
+        sessionToken: data.session_token,
         scenario,
         practiceSide
       })
@@ -108,7 +110,7 @@ export default function CoachAvatar() {
     try {
       const resp = await fetch('/api/session/analyze', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-Session-Token': session.sessionToken || '' },
         body: JSON.stringify({
           conversation_id: conversationId,
           scenario_id: session.scenario?.id || 'salary',
@@ -123,7 +125,7 @@ export default function CoachAvatar() {
       setAnalysis({ error: message } as Analysis)
       setSession(s => ({ ...s, status: 'done' }))
     }
-  }, [session.conversationId, session.sessionId, session.scenario?.id, session.practiceSide?.id])
+  }, [session.conversationId, session.sessionId, session.sessionToken, session.scenario?.id, session.practiceSide?.id])
 
   // The PAL can hang up itself (Tavus end_call). Poll the status and start the analysis automatically.
   const autoAnalyzeStarted = useRef(false)
@@ -133,7 +135,9 @@ export default function CoachAvatar() {
     const conversationId = session.conversationId
     const timer = window.setInterval(async () => {
       try {
-        const resp = await fetch(`/api/session/${conversationId}/status`)
+        const resp = await fetch(`/api/session/${conversationId}/status`, {
+          headers: { 'X-Session-Token': session.sessionToken || '' }
+        })
         if (!resp.ok) return
         const data = await resp.json()
         if (data.status === 'ended' && !autoAnalyzeStarted.current) {
@@ -146,7 +150,7 @@ export default function CoachAvatar() {
       }
     }, 5000)
     return () => window.clearInterval(timer)
-  }, [session.status, session.conversationId, stopAndAnalyze])
+  }, [session.status, session.conversationId, session.sessionToken, stopAndAnalyze])
 
   const reset = useCallback(() => {
     setSession({ status: 'selecting' })

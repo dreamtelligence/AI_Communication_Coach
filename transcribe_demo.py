@@ -26,7 +26,9 @@ from coach_app.schemas import AnalyzeSessionRequest, CreateSessionRequest
 from coach_app.security import (
     InMemoryRateLimiter,
     SecurityHeadersMiddleware,
+    issue_session_token,
     require_admin_token,
+    require_session_token,
     validate_upload_size,
 )
 from coach_app.tavus_client import (
@@ -321,26 +323,30 @@ def create_session(payload: CreateSessionRequest) -> dict:
     )
     if "error" in result:
         raise HTTPException(status_code=502, detail=result["error"])
-    return result
+    # binds status/analyze calls to the browser that created the session
+    return {**result, "session_token": issue_session_token(result["conversation_id"])}
 
 
 @web_app.get("/api/session/{conversation_id}/status")
-def conversation_status(conversation_id: str) -> dict:
+def conversation_status(conversation_id: str, request: Request) -> dict:
     """Lets the frontend notice when the PAL ended the call itself (end_call)."""
     if not CONVERSATION_ID_PATTERN.fullmatch(conversation_id):
         raise HTTPException(status_code=400, detail="Invalid conversation id.")
+    require_session_token(request, conversation_id)
     api_key = _tavus_api_key()
     if not api_key:
         raise HTTPException(status_code=503, detail="Tavus is not configured.")
     try:
         conversation = get_conversation(api_key, conversation_id, verbose=False)
     except TavusError as exc:
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
+        print(f"Tavus status lookup failed: {exc}")
+        raise HTTPException(status_code=502, detail="Status nicht verfügbar.") from exc
     return {"status": conversation.get("status", "unknown")}
 
 
 @web_app.post("/api/session/analyze")
-def analyze_endpoint(payload: AnalyzeSessionRequest) -> dict:
+def analyze_endpoint(payload: AnalyzeSessionRequest, request: Request) -> dict:
+    require_session_token(request, payload.conversation_id)
     result = analyze_tavus_session.remote(payload.conversation_id, payload.scenario_id, payload.practice_side)
     if "error" in result:
         raise HTTPException(status_code=502, detail=result["error"])

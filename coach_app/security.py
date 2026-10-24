@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import hmac
 import os
 import time
 from collections import deque
@@ -45,8 +47,7 @@ class InMemoryRateLimiter:
         if not request.url.path.startswith("/api/"):
             return
         now = time.monotonic()
-        client_host = request.client.host if request.client else "unknown"
-        key = f"{client_host}:{request.url.path}"
+        key = f"{client_ip(request)}:{request.url.path}"
         window_start = now - self.window_seconds
         existing = self._requests.get(key, deque())
         current = deque(timestamp for timestamp in existing if timestamp >= window_start)
@@ -54,6 +55,35 @@ class InMemoryRateLimiter:
             raise HTTPException(status_code=429, detail="Rate limit exceeded. Please try again later.")
         current.append(now)
         self._requests = {**self._requests, key: current}
+
+
+def client_ip(request: Request) -> str:
+    # Behind the Vercel rewrite (coach.dreamtelligence.de) every request comes from Vercel; Vercel puts the
+    # visitor IP first in X-Forwarded-For. Direct calls to the modal.run URL can spoof this header, so the
+    # limiter stays best-effort there.
+    forwarded = request.headers.get("x-forwarded-for", "")
+    first = forwarded.split(",")[0].strip()
+    if first:
+        return first
+    return request.client.host if request.client else "unknown"
+
+
+def _session_secret() -> bytes:
+    # Derived from the server-only Tavus key, so no extra secret has to be managed.
+    base = os.environ.get("SESSION_SECRET") or os.environ.get("TAVUS_API_KEY") or os.environ.get("TAURUS_API_KEY") or ""
+    if not base:
+        raise HTTPException(status_code=503, detail="Session signing is not configured.")
+    return hashlib.sha256(f"coachvoice-session:{base}".encode()).digest()
+
+
+def issue_session_token(conversation_id: str) -> str:
+    return hmac.new(_session_secret(), conversation_id.encode(), hashlib.sha256).hexdigest()
+
+
+def require_session_token(request: Request, conversation_id: str) -> None:
+    supplied = request.headers.get("X-Session-Token", "")
+    if not supplied or not hmac.compare_digest(supplied, issue_session_token(conversation_id)):
+        raise HTTPException(status_code=403, detail="Session nicht gefunden oder abgelaufen.")
 
 
 def require_admin_token(request: Request) -> None:
