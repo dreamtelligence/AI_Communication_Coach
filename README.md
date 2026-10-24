@@ -288,6 +288,6 @@ cd ..
 
 This is an active portfolio project. The live Tavus roleplay works, the scenario/role model is intentionally focused, and the analysis pipeline is deployed with provider fallback.
 
-The current production URL is hosted on Modal:
+The production URL (frontend on Vercel, API and AI on Modal):
 
 **https://coach.dreamtelligence.de/**
