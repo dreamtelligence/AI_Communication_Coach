@@ -242,7 +242,7 @@ cd ..
 Live app:
 
 ```text
-https://aliundmaggy--asr-coaching-analysis-fastapi-app.modal.run/
+https://coach.dreamtelligence.de/
 ```
 
 Modal dashboard:
@@ -290,4 +290,4 @@ This is an active portfolio project. The live Tavus roleplay works, the scenario
 
 The current production URL is hosted on Modal:
 
-**https://aliundmaggy--asr-coaching-analysis-fastapi-app.modal.run/**
+**https://coach.dreamtelligence.de/**
