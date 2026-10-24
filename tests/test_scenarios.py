@@ -2,7 +2,16 @@ from __future__ import annotations
 
 import unittest
 
-from coach_app.scenarios import PAL_VERSION, build_pal_prompt, get_practice_side, get_scenario
+from coach_app.analysis import build_analysis_prompt
+from coach_app.scenarios import (
+    PAL_VERSION,
+    SCENARIOS,
+    build_pal_prompt,
+    get_practice_side,
+    get_scenario,
+    get_stt_hotwords,
+    list_public_scenarios,
+)
 
 
 class ScenarioPromptTests(unittest.TestCase):
@@ -50,6 +59,46 @@ class ScenarioPromptTests(unittest.TestCase):
         ]
         self.assertEqual(len(face_ids), 4)
         self.assertEqual(len(set(face_ids)), 4)
+
+    def test_faces_are_unique_across_all_scenarios(self) -> None:
+        face_ids = [side["face_id"] for scenario in SCENARIOS for side in scenario["practice_sides"]]
+        self.assertEqual(len(face_ids), len(set(face_ids)))
+
+
+class DatingScenarioTests(unittest.TestCase):
+    def test_dating_prompt_uses_own_template_with_guardrails(self) -> None:
+        scenario = get_scenario("dating")
+        self.assertEqual(scenario["id"], "dating")
+        for side in scenario["practice_sides"]:
+            prompt = build_pal_prompt(scenario, side["id"])
+            self.assertIn("ersten Video-Date", prompt)
+            self.assertIn("sexuelle Themen", prompt)
+            self.assertIn("baust keine Beziehung auf", prompt)
+            self.assertIn("end_call", prompt)
+            self.assertNotIn("Eine Einigung ist erreichbar", prompt)
+            self.assertNotIn("{", prompt)
+
+    def test_business_prompts_keep_default_template(self) -> None:
+        prompt = build_pal_prompt(get_scenario("complaint"), "support")
+        self.assertIn("Kommunikationstraining", prompt)
+        self.assertNotIn("Video-Date", prompt)
+
+    def test_public_scenarios_expose_rubric_labels(self) -> None:
+        labels = {s["id"]: [r["label"] for r in s["rubric"]] for s in list_public_scenarios()}
+        self.assertEqual(labels["salary"], ["Empathie", "Klarheit", "Ergebnis"])
+        self.assertEqual(labels["dating"], ["Interesse", "Gesprächsfluss", "Wirkung"])
+
+    def test_analysis_prompt_uses_scenario_rubric(self) -> None:
+        business = build_analysis_prompt("Avatar: Hallo\nNutzer: Hallo", "salary", "employee")
+        dating = build_analysis_prompt("Avatar: Hallo\nNutzer: Hallo", "dating", "date_lena")
+        self.assertIn("1. Empathie und emotionale Intelligenz", business)
+        self.assertIn("1. Echtes Interesse und Zuhören", dating)
+        self.assertNotIn("Ergebnisorientierung", dating)
+        self.assertIn("Kriterium 1 → empathy_score", dating)
+
+    def test_stt_hotwords_per_scenario(self) -> None:
+        self.assertIn("Dating-App", get_stt_hotwords(get_scenario("dating")))
+        self.assertIn("Gehaltsverhandlung", get_stt_hotwords(get_scenario("salary")))
 
 
 if __name__ == "__main__":

@@ -11,6 +11,7 @@ from coach_app.scenarios import (
     build_pal_prompt,
     get_opening,
     get_practice_side,
+    get_stt_hotwords,
 )
 
 
@@ -162,11 +163,7 @@ def _create_pal(api_key: str, scenario: dict[str, Any], practice_side_id: str) -
             },
             "stt": {
                 "stt_engine": STT_ENGINE,
-                "hotwords": (
-                    "Deutschsprachiges Business-Rollenspiel. Wichtige Begriffe: "
-                    "Gehaltsverhandlung, Kundenbeschwerde, Führungskraft, Mitarbeiter, "
-                    "Service, Beschwerde, Vergütung, Budget, Lösung, Dr. Meier, Frau Keller, Herr Brandt."
-                ),
+                "hotwords": get_stt_hotwords(scenario),
             },
             "conversational_flow": {
                 "turn_detection_model": TURN_DETECTION_MODEL,

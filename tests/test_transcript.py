@@ -63,10 +63,10 @@ class TranscriptTests(unittest.TestCase):
     def test_unknown_scenario_falls_back_to_default_demo_case(self) -> None:
         self.assertEqual(get_scenario("missing")["id"], "salary")
 
-    def test_public_scenarios_are_reduced_to_two_demo_cases(self) -> None:
+    def test_public_scenarios_are_the_focused_demo_cases(self) -> None:
         scenario_ids = [scenario["id"] for scenario in list_public_scenarios()]
 
-        self.assertEqual(scenario_ids, ["salary", "complaint"])
+        self.assertEqual(scenario_ids, ["salary", "complaint", "dating"])
 
     def test_salary_scenario_has_manager_training_side(self) -> None:
         side = get_practice_side(get_scenario("salary"), "manager")

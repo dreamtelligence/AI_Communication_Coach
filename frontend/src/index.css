@@ -575,6 +575,7 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
+  align-items: stretch;
   gap: 6px;
   cursor: pointer;
   box-shadow: var(--shadow-xs);
@@ -674,7 +675,9 @@ body {
 }
 
 @media (min-width: 720px) {
-  .demo-scenario-grid,
+  .demo-scenario-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
   .role-options {
     grid-template-columns: repeat(2, 1fr);
   }

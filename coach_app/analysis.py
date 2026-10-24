@@ -5,7 +5,7 @@ from typing import Any
 
 import requests
 
-from coach_app.scenarios import get_scenario, get_practice_side
+from coach_app.scenarios import get_practice_side, get_rubric, get_scenario
 from coach_app.transcript import parse_transcript
 
 
@@ -34,6 +34,7 @@ def build_analysis_prompt(text: str, scenario_id: str = "salary", practice_side_
     user_text = parsed["user_only"] or "(Keine Nutzer-Aussagen identifiziert.)"
     avatar_text = parsed["avatar_only"] or "(Keine Avatar-Aussagen identifiziert.)"
     clean_transcript = parsed["full_transcript"] or "(Keine auswertbare Unterhaltung identifiziert.)"
+    rubric_text = _rubric_text(scenario)
     return f"""Analysiere ein Live-Rollenspiel aus einem Kommunikationstraining.
 
 SZENARIO: {scenario["title"]}
@@ -60,12 +61,8 @@ WICHTIG ZUM TRANSKRIPT
 - Ein KI-Hinweis des Avatars am Anfang („Ich bin ein KI-Avatar…“) gehört nicht zum Rollenspiel.
 
 BEWERTE AUSSCHLIESSLICH DEN MENSCHLICHEN NUTZER (je 1-10)
-1. Empathie und emotionale Intelligenz
-   2-3: ignoriert oder verharmlost Gefühle  |  5-6: erkennt Gefühle an, aber floskelhaft  |  8-9: benennt Gefühle konkret, entschuldigt sich passend, Gegenüber fühlt sich ernst genommen
-2. Klarheit und Struktur
-   2-3: sprunghaft, unverständlich, ohne roten Faden  |  5-6: verständlich, aber vage oder unverbindlich  |  8-9: klar, strukturiert, fasst zusammen
-3. Ergebnisorientierung
-   2-3: kein Ergebnis  |  5-6: Lösung angedeutet, aber ohne konkrete Zusagen  |  8-9: verbindliche Vereinbarung mit konkreten nächsten Schritten
+{rubric_text}
+Feld-Zuordnung im JSON: Kriterium 1 → empathy_score/empathy_feedback, Kriterium 2 → clarity_score/clarity_feedback, Kriterium 3 → result_score/result_feedback.
 Belege jeden Score mit mindestens einem wörtlichen Zitat des Nutzers. Sei ehrlich, aber fair, und sprich den Nutzer mit „Sie“ an.
 
 ZUSÄTZLICH
@@ -75,6 +72,13 @@ ZUSÄTZLICH
 
 Gib nur JSON in dieser Form zurück:
 {{"asr_notes":["..."],"empathy_score":7,"empathy_feedback":"...","clarity_score":6,"clarity_feedback":"...","result_score":8,"result_feedback":"...","summary":"...","better_phrasings":[{{"original":"...","better":"...","why":"..."}}],"counterpart_journey":"..."}}"""
+
+
+def _rubric_text(scenario: dict[str, Any]) -> str:
+    """Numbered scoring criteria; order matches the empathy/clarity/result JSON fields."""
+    return "\n".join(
+        f"{i}. {item['title']}\n   {item['levels']}" for i, item in enumerate(get_rubric(scenario), start=1)
+    )
 
 
 def build_fallback_prompt(scenario_id: str = "salary", practice_side_id: str | None = None) -> str:

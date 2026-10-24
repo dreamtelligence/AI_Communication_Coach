@@ -19,6 +19,8 @@ interface Scenario {
   avatar_role: string
   user_goal: string
   practice_sides: PracticeSide[]
+  rubric?: { key: string; label: string }[]
+  side_prompt?: string
 }
 
 interface SessionState {
@@ -47,6 +49,8 @@ interface Analysis {
   error?: string
   note?: string
 }
+
+const DEFAULT_GAUGE_LABELS = ['Empathie', 'Klarheit', 'Ergebnis']
 
 export default function CoachAvatar() {
   const [session, setSession] = useState<SessionState>({ status: 'selecting' })
@@ -191,7 +195,7 @@ export default function CoachAvatar() {
         <div className="coach-placeholder" style={{ borderStyle: 'solid' }}>
           <Grid3X3 size={40} />
           <h2>Demo-Szenario wählen</h2>
-          <p>Wähle eines der zwei fokussierten Trainings und danach die Rolle, die du selbst üben möchtest.</p>
+          <p>Wähle ein Training und danach, welche Seite oder welches Gegenüber du üben möchtest.</p>
 
           <div className="demo-scenario-grid">
             {scenarios.map(s => (
@@ -211,7 +215,7 @@ export default function CoachAvatar() {
 
           {selectedScenario && selectedSide && (
             <div className="role-panel">
-              <div className="role-panel-title">Welche Seite möchtest du trainieren?</div>
+              <div className="role-panel-title">{selectedScenario.side_prompt || 'Welche Seite möchtest du trainieren?'}</div>
               <div className="role-options">
                 {selectedScenario.practice_sides.map(side => (
                   <button
@@ -265,7 +269,7 @@ export default function CoachAvatar() {
               <p className="coach-scenario-hint">
                 Ziel: {session.practiceSide?.user_goal}
                 <br />
-                Deine Rolle: {session.practiceSide?.label}. Der Avatar spielt konsequent die Gegenseite.
+                Training: {session.practiceSide?.label}. Der Avatar bleibt durchgehend in seiner Rolle.
               </p>
             </div>
             <button
@@ -300,6 +304,8 @@ export default function CoachAvatar() {
 
   // ---- ANALYSIS RESULT ----
   if (session.status === 'done') {
+    const rubricLabels = session.scenario?.rubric?.map(r => r.label) ?? []
+    const gaugeLabels = rubricLabels.length === 3 ? rubricLabels : DEFAULT_GAUGE_LABELS
     return (
       <div className="coach-container">
         <div className="analysis-result">
@@ -322,9 +328,9 @@ export default function CoachAvatar() {
           {!analysis?.error && (
             <>
               <div className="gauges-row">
-                <RadialGauge label="Empathie" score={analysis?.empathy_score || 0} feedback={analysis?.empathy_feedback || ''} />
-                <RadialGauge label="Klarheit" score={analysis?.clarity_score || 0} feedback={analysis?.clarity_feedback || ''} />
-                <RadialGauge label="Ergebnis" score={analysis?.result_score || 0} feedback={analysis?.result_feedback || ''} />
+                <RadialGauge label={gaugeLabels[0]} score={analysis?.empathy_score || 0} feedback={analysis?.empathy_feedback || ''} />
+                <RadialGauge label={gaugeLabels[1]} score={analysis?.clarity_score || 0} feedback={analysis?.clarity_feedback || ''} />
+                <RadialGauge label={gaugeLabels[2]} score={analysis?.result_score || 0} feedback={analysis?.result_feedback || ''} />
               </div>
 
               <div className="summary-section">
