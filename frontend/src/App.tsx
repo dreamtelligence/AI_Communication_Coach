@@ -1,8 +1,7 @@
 import { useState, useRef } from 'react'
-import { Upload, FileAudio, CheckCircle2, AlertCircle, MessageCircle, Mic } from 'lucide-react'
+import { AlertCircle, ArrowUpRight, AudioLines, FileAudio, Loader2, Upload, Video } from 'lucide-react'
 import CoachAvatar from './CoachAvatar'
-import { PageBackground } from '@/components/ui/background-components'
-import RadialGauge from '@/components/RadialGauge'
+import ScoreCard from '@/components/ScoreCard'
 
 interface AnalysisResult {
   empathy_score: number;
@@ -17,6 +16,21 @@ interface AnalysisResult {
 
 type Tab = 'live' | 'upload'
 
+const SITE_URL = 'https://dreamtelligence.de'
+const SERVICE_URL = `${SITE_URL}/leistungen/ki-gespraechstraining`
+
+function PageBackground() {
+  return (
+    <div className="sky" aria-hidden="true">
+      <div className="sky-gradient" />
+      <img className="sky-cloud" src="/brand/hero-wolke.webp" alt="" />
+      <div className="sky-ray sky-ray--left" />
+      <div className="sky-ray sky-ray--right" />
+      <div className="sky-fade" />
+    </div>
+  )
+}
+
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('live')
   const [file, setFile] = useState<File | null>(null)
@@ -26,13 +40,15 @@ function App() {
   const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  const pickFile = (picked: File) => {
+    setFile(picked)
+    setTranscript(null)
+    setAnalysis(null)
+    setError(null)
+  }
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0])
-      setTranscript(null)
-      setAnalysis(null)
-      setError(null)
-    }
+    if (e.target.files && e.target.files[0]) pickFile(e.target.files[0])
   }
 
   const handleUpload = async () => {
@@ -54,12 +70,12 @@ function App() {
 
       const data = await response.json()
       if (!response.ok) {
-        throw new Error(data.error || data.detail || `Upload failed: ${response.statusText}`)
+        throw new Error(data.error || data.detail || `Upload fehlgeschlagen: ${response.statusText}`)
       }
       setTranscript(data.text)
       setAnalysis(data.analysis)
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'An error occurred during transcription.'
+      const message = err instanceof Error ? err.message : 'Die Aufnahme konnte nicht ausgewertet werden.'
       setError(message)
     } finally {
       setLoading(false)
@@ -67,129 +83,103 @@ function App() {
   }
 
   return (
-    <PageBackground>
-    <div className="dashboard">
-      <header>
-        <h1>CoachVoice</h1>
-        <p className="subtitle">AI Communication Coach — Real-Time Analysis</p>
-      </header>
+    <>
+      <PageBackground />
 
-      <div className="tab-bar">
-        <button
-          className={`tab-btn ${activeTab === 'live' ? 'active' : ''}`}
-          onClick={() => setActiveTab('live')}
-        >
-          <MessageCircle size={18} /> Live Coaching
-        </button>
-        <button
-          className={`tab-btn ${activeTab === 'upload' ? 'active' : ''}`}
-          onClick={() => setActiveTab('upload')}
-        >
-          <Mic size={18} /> Audio-Analyse
-        </button>
+      <div className="nav-frame">
+        <header className="nav">
+          <a className="nav-logo" href={SITE_URL} aria-label="Dreamtelligence Startseite">
+            <img src="/brand/logo.png" alt="Dreamtelligence" width={192} height={192} />
+          </a>
+          <span className="nav-sep" aria-hidden="true" />
+          <nav className="nav-tabs" aria-label="Bereiche">
+            <button className={`nav-tab ${activeTab === 'live' ? 'is-active' : ''}`} aria-current={activeTab === 'live'} onClick={() => setActiveTab('live')}>
+              <Video size={16} /> Live-Training
+            </button>
+            <button className={`nav-tab ${activeTab === 'upload' ? 'is-active' : ''}`} aria-current={activeTab === 'upload'} onClick={() => setActiveTab('upload')}>
+              <AudioLines size={16} /> Audio-Analyse
+            </button>
+          </nav>
+          <a className="nav-site" href={SERVICE_URL}>
+            Zur Leistung <ArrowUpRight size={16} />
+          </a>
+        </header>
       </div>
 
-      {activeTab === 'live' && (
-        <CoachAvatar />
-      )}
+      <main className="page">
+        {activeTab === 'live' && <CoachAvatar />}
 
-      {activeTab === 'upload' && (
-        <>
-          <div
-            className="dropzone"
-            onClick={() => fileInputRef.current?.click()}
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => {
-              e.preventDefault()
-              if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-                setFile(e.dataTransfer.files[0])
-                setTranscript(null)
-                setAnalysis(null)
-                setError(null)
-              }
-            }}
-          >
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileChange}
-              accept="audio/*"
-            />
-            <Upload className="upload-icon" />
-            {file ? (
-              <p>Selected: <strong>{file.name}</strong></p>
-            ) : (
-              <p>Drop an audio file or click to browse</p>
-            )}
-          </div>
+        {activeTab === 'upload' && (
+          <>
+            <header className="page-intro">
+              <h1>Aufnahme auswerten.</h1>
+              <p>
+                Lade die Aufnahme eines echten Gesprächs hoch. Sie wird abgeschrieben und nach Empathie,
+                Klarheit und Ergebnis bewertet.
+              </p>
+            </header>
 
-          <div style={{ textAlign: 'center', marginTop: 24 }}>
-            <button
-              className={file && !loading ? 'btn-accent' : ''}
-              onClick={handleUpload}
-              disabled={!file || loading}
-            >
-              {loading ? 'Processing...' : 'Start AI Analysis'}
-            </button>
-          </div>
-
-          {loading && (
-            <div className="loading-container">
-              <div className="spinner"></div>
-              <p style={{ color: 'var(--text-secondary)' }}>AI is transcribing & analyzing on Modal L40S GPU…</p>
-            </div>
-          )}
-
-          {error && (
-            <div className="result-card" style={{ borderColor: 'rgba(248,113,113,0.3)' }}>
-              <div className="result-header" style={{ color: 'var(--danger)' }}>
-                <AlertCircle size={20} /> Error
-              </div>
-              <p className="transcript-text">{error}</p>
-            </div>
-          )}
-
-          {analysis && (
-            <div className="result-card">
-              <div className="result-header">
-                <CheckCircle2 size={20} /> Coaching Analysis
+            <div className="upload">
+              <div
+                className={`dropzone glass ${file ? 'has-file' : ''}`}
+                role="button"
+                tabIndex={0}
+                onClick={() => fileInputRef.current?.click()}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInputRef.current?.click() } }}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault()
+                  if (e.dataTransfer.files && e.dataTransfer.files[0]) pickFile(e.dataTransfer.files[0])
+                }}
+              >
+                <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="audio/*" hidden />
+                <span className="icon-box">{file ? <FileAudio size={22} strokeWidth={1.6} /> : <Upload size={22} strokeWidth={1.6} />}</span>
+                {file ? (
+                  <p><strong>{file.name}</strong><span>Andere Datei wählen</span></p>
+                ) : (
+                  <p><strong>Audiodatei hierher ziehen</strong><span>oder klicken, um eine Datei auszuwählen</span></p>
+                )}
               </div>
 
-              <div className="gauges-row">
-                <RadialGauge label="Empathie" score={analysis.empathy_score} feedback={analysis.empathy_feedback} />
-                <RadialGauge label="Klarheit" score={analysis.clarity_score} feedback={analysis.clarity_feedback} />
-                <RadialGauge label="Ergebnis" score={analysis.result_score} feedback={analysis.result_feedback} />
-              </div>
+              <button className="btn btn-primary" onClick={handleUpload} disabled={!file || loading}>
+                {loading ? <><Loader2 className="spin" size={18} /> Wird ausgewertet …</> : 'Aufnahme auswerten'}
+              </button>
 
-              <div className="summary-section">
-                <h3>Zusammenfassung</h3>
-                <p>{analysis.summary}</p>
-              </div>
-
-              {analysis.error && (
-                <div className="debug-info">
-                  Analysis Note: {analysis.error}
-                </div>
+              {error && (
+                <div className="notice notice--error"><AlertCircle size={18} /> {error}</div>
               )}
             </div>
-          )}
 
-          {transcript && (
-            <div className="result-card">
-              <div className="result-header">
-                <FileAudio size={20} /> Transcript
+            {analysis && (
+              <div className="result">
+                <div className="score-grid">
+                  <ScoreCard label="Empathie" score={analysis.empathy_score} feedback={analysis.empathy_feedback} />
+                  <ScoreCard label="Klarheit" score={analysis.clarity_score} feedback={analysis.clarity_feedback} />
+                  <ScoreCard label="Ergebnis" score={analysis.result_score} feedback={analysis.result_feedback} />
+                </div>
+                <section className="panel glass">
+                  <h2>Zusammenfassung</h2>
+                  <p>{analysis.summary}</p>
+                </section>
+                {analysis.error && <div className="notice">{analysis.error}</div>}
               </div>
-              <div className="transcript-text">{transcript}</div>
-            </div>
-          )}
-        </>
-      )}
+            )}
 
-      <footer>
-        Powered by Tavus, Modal & NVIDIA Parakeet
+            {transcript && (
+              <details className="transcript glass result" open>
+                <summary>Transkript</summary>
+                <pre>{transcript}</pre>
+              </details>
+            )}
+          </>
+        )}
+      </main>
+
+      <footer className="footer">
+        <span>KI-Gesprächstraining von <a href={SITE_URL}>Dreamtelligence</a></span>
+        <span>Live-Avatar: Tavus</span>
       </footer>
-    </div>
-    </PageBackground>
+    </>
   )
 }
 

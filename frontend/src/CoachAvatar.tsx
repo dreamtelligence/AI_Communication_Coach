@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { StopCircle, Loader2, AlertCircle, CheckCircle2, RefreshCw, Grid3X3, PlayCircle } from 'lucide-react'
-import RadialGauge from '@/components/RadialGauge'
+import {
+  AlertCircle, BadgeEuro, Heart, Loader2, MessageSquareWarning, MessagesSquare, PhoneOff, Play, RotateCcw, Video,
+} from 'lucide-react'
+import ScoreCard from '@/components/ScoreCard'
+import { DEMO_ANALYSIS } from './demo'
+import { initials, personaFor, type Persona } from './personas'
 
 interface PracticeSide {
   id: string
@@ -34,7 +38,7 @@ interface SessionState {
   error?: string
 }
 
-interface Analysis {
+export interface Analysis {
   empathy_score: number
   empathy_feedback: string
   clarity_score: number
@@ -52,6 +56,38 @@ interface Analysis {
 
 const DEFAULT_GAUGE_LABELS = ['Empathie', 'Klarheit', 'Ergebnis']
 
+const SCENARIO_ICONS: Record<string, typeof Heart> = {
+  dollar: BadgeEuro,
+  'message-circle': MessageSquareWarning,
+  heart: Heart,
+}
+
+function rubricLabels(scenario?: Scenario): string[] {
+  const labels = scenario?.rubric?.map(r => r.label) ?? []
+  return labels.length === 3 ? labels : DEFAULT_GAUGE_LABELS
+}
+
+function Portrait({ persona, size = 'lg', ringing = false }: { persona: Persona; size?: 'sm' | 'lg'; ringing?: boolean }) {
+  return (
+    <div className={`portrait portrait--${size} ${ringing ? 'portrait--ringing' : ''}`} aria-hidden="true">
+      <span>{initials(persona.name)}</span>
+    </div>
+  )
+}
+
+function useElapsed(running: boolean): string {
+  const [seconds, setSeconds] = useState(0)
+  useEffect(() => {
+    if (!running) return
+    setSeconds(0)
+    const timer = window.setInterval(() => setSeconds(s => s + 1), 1000)
+    return () => window.clearInterval(timer)
+  }, [running])
+  const m = Math.floor(seconds / 60)
+  const s = seconds % 60
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+}
+
 export default function CoachAvatar() {
   const [session, setSession] = useState<SessionState>({ status: 'selecting' })
   const [scenarios, setScenarios] = useState<Scenario[]>([])
@@ -61,9 +97,19 @@ export default function CoachAvatar() {
   const [analysis, setAnalysis] = useState<Analysis | null>(null)
 
   useEffect(() => {
+    const demo = new URLSearchParams(window.location.search).get('demo')
+
     fetch('/api/scenarios')
       .then(r => r.json())
-      .then(data => setScenarios(data.scenarios || []))
+      .then(data => {
+        const list: Scenario[] = data.scenarios || []
+        setScenarios(list)
+        // ?demo=auswertung shows a sample analysis for screenshots, without starting a Tavus call
+        if (demo === 'auswertung' && list[0]) {
+          setSession({ status: 'done', scenario: list[0], practiceSide: list[0].practice_sides[0] })
+          setAnalysis(DEMO_ANALYSIS)
+        }
+      })
       .catch(() => setScenarios([]))
 
     fetch('/api/session/status')
@@ -156,33 +202,35 @@ export default function CoachAvatar() {
     return () => window.clearInterval(timer)
   }, [session.status, session.conversationId, session.sessionToken, stopAndAnalyze])
 
+  const inCall = session.status === 'active' || session.status === 'analyzing'
+  const elapsed = useElapsed(session.status === 'active')
+
   const reset = useCallback(() => {
     setSession({ status: 'selecting' })
     setAnalysis(null)
+    window.scrollTo({ top: 0 })
   }, [])
 
   if (setupStatus === 'loading') {
     return (
-      <div className="coach-container">
-        <div className="coach-placeholder">
-          <Loader2 className="spinner-icon" size={48} />
-          <h2>Coach wird vorbereitet…</h2>
-          <p>Die KI-Ressourcen werden initialisiert.</p>
-        </div>
-      </div>
+      <section className="state-card glass">
+        <Loader2 className="spin" size={28} />
+        <h2>Training wird vorbereitet</h2>
+        <p>Die Szenarien und der Video-Avatar werden geladen.</p>
+      </section>
     )
   }
 
   if (setupStatus === 'error') {
     return (
-      <div className="coach-container">
-        <div className="coach-placeholder coach-error">
-          <AlertCircle size={48} />
-          <h2>Setup-Fehler</h2>
-          <p>Tavus ist nicht konfiguriert oder aktuell nicht erreichbar.</p>
-          <button onClick={() => window.location.reload()}>Neu laden</button>
-        </div>
-      </div>
+      <section className="state-card glass">
+        <AlertCircle size={28} />
+        <h2>Der Video-Avatar ist gerade nicht erreichbar</h2>
+        <p>Lade die Seite in ein paar Minuten neu. Die Audio-Analyse funktioniert unabhängig davon.</p>
+        <button className="btn btn-secondary" onClick={() => window.location.reload()}>
+          <RotateCcw size={18} /> Neu laden
+        </button>
+      </section>
     )
   }
 
@@ -190,198 +238,248 @@ export default function CoachAvatar() {
   if (session.status === 'selecting') {
     const selectedScenario = scenarios.find(s => s.id === selectedScenarioId) || scenarios[0]
     const selectedSide = selectedScenario?.practice_sides.find(side => side.id === selectedSideId) || selectedScenario?.practice_sides[0]
-    return (
-      <div className="coach-container">
-        <div className="coach-placeholder" style={{ borderStyle: 'solid' }}>
-          <Grid3X3 size={40} />
-          <h2>Demo-Szenario wählen</h2>
-          <p>Wähle ein Training und danach, welche Seite oder welches Gegenüber du üben möchtest.</p>
+    const persona = selectedSide ? personaFor(selectedSide.id, selectedSide.avatar_role) : null
 
-          <div className="demo-scenario-grid">
-            {scenarios.map(s => (
-              <button
-                key={s.id}
-                className={`scenario-choice ${selectedScenario?.id === s.id ? 'active' : ''}`}
-                onClick={() => {
-                  setSelectedScenarioId(s.id)
-                  setSelectedSideId(s.practice_sides[0]?.id || '')
-                }}
-              >
-                <strong>{s.title}</strong>
-                <span>{s.description}</span>
-              </button>
-            ))}
+    return (
+      <>
+        <header className="page-intro">
+          <h1>Übe das Gespräch, bevor es zählt.</h1>
+          <p>
+            Wähle eine Situation und dein Gegenüber. Der Avatar spielt die Rolle live per Video,
+            danach bekommst du eine Auswertung mit besseren Formulierungen.
+          </p>
+        </header>
+
+        <div className="setup">
+          <div className="setup-steps">
+            <section className="step" aria-labelledby="step-situation">
+              <h2 id="step-situation"><span className="step-no">1</span>Welche Situation willst du üben?</h2>
+              <div className="scenario-grid">
+                {scenarios.map(s => {
+                  const Icon = SCENARIO_ICONS[s.icon] || MessagesSquare
+                  const active = selectedScenario?.id === s.id
+                  return (
+                    <button
+                      key={s.id}
+                      className={`scenario-card glass ${active ? 'is-active' : ''}`}
+                      aria-pressed={active}
+                      onClick={() => {
+                        setSelectedScenarioId(s.id)
+                        setSelectedSideId(s.practice_sides[0]?.id || '')
+                      }}
+                    >
+                      <span className="icon-box"><Icon size={22} strokeWidth={1.6} /></span>
+                      <span className="scenario-category">{s.category}</span>
+                      <strong>{s.title}</strong>
+                      <span className="scenario-desc">{s.description}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </section>
+
+            {selectedScenario && (
+              <section className="step" aria-labelledby="step-counterpart">
+                <h2 id="step-counterpart">
+                  <span className="step-no">2</span>
+                  {selectedScenario.id === 'dating' ? 'Mit wem hast du dein Date?' : 'Welche Seite übernimmst du?'}
+                </h2>
+                <div className="persona-grid">
+                  {selectedScenario.practice_sides.map(side => {
+                    const p = personaFor(side.id, side.avatar_role)
+                    const active = selectedSide?.id === side.id
+                    return (
+                      <button
+                        key={side.id}
+                        className={`persona-card glass ${active ? 'is-active' : ''}`}
+                        aria-pressed={active}
+                        onClick={() => setSelectedSideId(side.id)}
+                      >
+                        <Portrait persona={p} size="sm" />
+                        <span className="persona-text">
+                          <span className="persona-side">{side.label}</span>
+                          <strong>Gegenüber: {p.name}</strong>
+                          <span>{p.role}</span>
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </section>
+            )}
           </div>
 
-          {selectedScenario && selectedSide && (
-            <div className="role-panel">
-              <div className="role-panel-title">{selectedScenario.side_prompt || 'Welche Seite möchtest du trainieren?'}</div>
-              <div className="role-options">
-                {selectedScenario.practice_sides.map(side => (
-                  <button
-                    key={side.id}
-                    className={`role-option ${selectedSide.id === side.id ? 'active' : ''}`}
-                    onClick={() => setSelectedSideId(side.id)}
-                  >
-                    <strong>{side.label}</strong>
-                    <span>{side.user_goal}</span>
-                  </button>
-                ))}
+          {selectedScenario && selectedSide && persona && (
+            <aside className="stage stage--preview" aria-label="Vorschau des Gesprächs">
+              <div className="stage-top">
+                <span className="stage-chip"><Video size={14} /> Video-Call</span>
+                <span className="stage-chip stage-chip--ready"><span className="dot" /> Bereit</span>
               </div>
-              <button
-                className="coach-start-btn"
-                onClick={() => startCoaching(selectedScenario, selectedSide)}
-              >
-                <PlayCircle size={18} /> Training starten
+              <div className="stage-person">
+                <Portrait persona={persona} />
+                <h3>{persona.name}</h3>
+                <p className="stage-role">{persona.role}</p>
+                {persona.mood && <p className="stage-mood">{persona.mood}</p>}
+              </div>
+              <div className="stage-brief">
+                <h4>Dein Ziel</h4>
+                <p>{selectedSide.user_goal}</p>
+                <h4>Bewertet wird</h4>
+                <ul className="criteria">
+                  {rubricLabels(selectedScenario).map(l => <li key={l}>{l}</li>)}
+                </ul>
+              </div>
+              <button className="btn btn-light" onClick={() => startCoaching(selectedScenario, selectedSide)}>
+                <Play size={18} /> Gespräch starten
               </button>
-            </div>
+              <p className="stage-hint">Mikrofon und Kamera werden beim Start abgefragt.</p>
+            </aside>
           )}
         </div>
-      </div>
+      </>
     )
   }
+
+  const scenario = session.scenario
+  const side = session.practiceSide
+  const persona = side ? personaFor(side.id, side.avatar_role) : { name: 'Dein Gegenüber', role: '', mood: '' }
 
   // ---- CREATING ----
   if (session.status === 'creating') {
     return (
-      <div className="coach-container">
-        <div className="coach-placeholder">
-          <Loader2 className="spinner-icon" size={48} />
-          <h2>Session wird erstellt…</h2>
-          <p>Szenario: {session.scenario?.title}</p>
-          <p>Trainierte Rolle: {session.practiceSide?.label}</p>
+      <div className="call-layout">
+        <div className="stage stage--call stage--connecting">
+          <div className="stage-person">
+            <Portrait persona={persona} ringing />
+            <h3>{persona.name}</h3>
+            <p className="stage-role">Verbindung wird aufgebaut …</p>
+          </div>
         </div>
+        <CallSidebar scenario={scenario} side={side} persona={persona} />
       </div>
     )
   }
 
   // ---- ACTIVE COACHING ----
-  if ((session.status === 'active' || session.status === 'analyzing') && session.embedUrl) {
+  if (inCall && session.embedUrl) {
     return (
-      <div className="coach-container">
-        <div className="coach-active">
-          <div className="coach-header">
-            <div>
-              <h2>
-                <span className="live-dot"></span>
-                {session.scenario?.title || 'Live Coaching'}
-              </h2>
-              <p className="coach-scenario-hint">
-                Ziel: {session.practiceSide?.user_goal}
-                <br />
-                Training: {session.practiceSide?.label}. Der Avatar bleibt durchgehend in seiner Rolle.
-              </p>
+      <div className="call-layout">
+        <div className="stage stage--call">
+          <iframe
+            src={session.embedUrl}
+            allow="microphone; camera; autoplay; fullscreen; display-capture"
+            title={`Video-Gespräch mit ${persona.name}`}
+            className="call-frame"
+          />
+          <div className="call-overlay-top">
+            <span className="stage-chip stage-chip--live"><span className="dot" /> Live {elapsed}</span>
+            <span className="stage-chip">{scenario?.title}</span>
+          </div>
+          {session.status === 'analyzing' && (
+            <div className="call-analyzing">
+              <Loader2 className="spin" size={30} />
+              <p>Gespräch wird ausgewertet …</p>
             </div>
-            <button
-              className="coach-stop-btn"
-              onClick={stopAndAnalyze}
-              disabled={session.status === 'analyzing'}
-            >
-              {session.status === 'analyzing'
-                ? <><Loader2 className="spinner-icon" size={18} /> Analysiere…</>
-                : <><StopCircle size={18} /> Beenden & Analysieren</>
-              }
-            </button>
-          </div>
-          <div className="coach-iframe-wrapper">
-            <iframe
-              src={session.embedUrl}
-              allow="microphone; camera; autoplay; fullscreen; display-capture"
-              title="Tavus Coach"
-              className="coach-iframe"
-            />
-          </div>
-          <div className="coach-tips">
-            <p>
-              <strong>Tipp:</strong> Erlaube Mikrofon-Zugriff. Der Avatar ist bereits in der richtigen Rolle — sprich einfach
-              natürlich, wie du es im echten Leben tun würdest. Verabschiedet ihr euch, legt der Avatar auf und die Analyse startet automatisch. Du kannst auch jederzeit "Beenden & Analysieren" klicken.
-            </p>
-          </div>
+          )}
         </div>
+        <CallSidebar scenario={scenario} side={side} persona={persona}>
+          <button className="btn btn-primary" onClick={stopAndAnalyze} disabled={session.status === 'analyzing'}>
+            {session.status === 'analyzing'
+              ? <><Loader2 className="spin" size={18} /> Wird ausgewertet …</>
+              : <><PhoneOff size={18} /> Beenden und auswerten</>}
+          </button>
+          <p className="sidebar-note">
+            Verabschiedet ihr euch, legt {persona.name} selbst auf und die Auswertung startet automatisch.
+          </p>
+        </CallSidebar>
       </div>
     )
   }
 
   // ---- ANALYSIS RESULT ----
   if (session.status === 'done') {
-    const rubricLabels = session.scenario?.rubric?.map(r => r.label) ?? []
-    const gaugeLabels = rubricLabels.length === 3 ? rubricLabels : DEFAULT_GAUGE_LABELS
+    const labels = rubricLabels(scenario)
     return (
-      <div className="coach-container">
-        <div className="analysis-result">
-          <div className="result-header">
-            <CheckCircle2 size={24} /> Coaching-Analyse: {session.scenario?.title}
+      <div className="result">
+        <header className="result-head">
+          <div className="result-title">
+            <Portrait persona={persona} size="sm" />
+            <div>
+              <h1>Deine Auswertung</h1>
+              <p>{scenario?.title} mit {persona.name}</p>
+            </div>
           </div>
-
-          {analysis?.error && (
-            <div className="debug-info">
-              Hinweis: {analysis.error}
-            </div>
-          )}
-
-          {analysis?.note && (
-            <div className="coach-tips" style={{ marginBottom: 20 }}>
-              <p>{analysis.note}</p>
-            </div>
-          )}
-
-          {!analysis?.error && (
-            <>
-              <div className="gauges-row">
-                <RadialGauge label={gaugeLabels[0]} score={analysis?.empathy_score || 0} feedback={analysis?.empathy_feedback || ''} />
-                <RadialGauge label={gaugeLabels[1]} score={analysis?.clarity_score || 0} feedback={analysis?.clarity_feedback || ''} />
-                <RadialGauge label={gaugeLabels[2]} score={analysis?.result_score || 0} feedback={analysis?.result_feedback || ''} />
-              </div>
-
-              <div className="summary-section">
-                <h3>Zusammenfassung</h3>
-                <p>{analysis?.summary}</p>
-              </div>
-
-              {analysis?.counterpart_journey && (
-                <div className="summary-section">
-                  <h3>Verlauf beim Gegenüber</h3>
-                  <p>{analysis.counterpart_journey}</p>
-                </div>
-              )}
-
-              {analysis?.better_phrasings && analysis.better_phrasings.length > 0 && (
-                <div className="summary-section">
-                  <h3>So hätten Sie es sagen können</h3>
-                  {analysis.better_phrasings.map((p, i) => (
-                    <div key={i} style={{ marginBottom: 14 }}>
-                      <p style={{ color: 'var(--text-secondary)', textDecoration: 'line-through' }}>„{p.original}“</p>
-                      <p><strong>„{p.better}“</strong></p>
-                      {p.why && <p style={{ color: 'var(--text-secondary)', fontSize: '0.9em' }}>{p.why}</p>}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {analysis?.asr_notes && analysis.asr_notes.length > 0 && (
-                <div className="coach-tips" style={{ marginTop: 16 }}>
-                  <p>
-                    <strong>Vermutlich falsch erkannt (nicht bewertet):</strong>{' '}
-                    {analysis.asr_notes.join(' · ')}
-                  </p>
-                </div>
-              )}
-
-              {analysis?.transcript && (
-                <details style={{ marginTop: 20 }}>
-                  <summary style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontWeight: 500 }}>Transkript anzeigen</summary>
-                  <pre className="transcript-pre">{analysis.transcript}</pre>
-                </details>
-              )}
-            </>
-          )}
-
-          <div style={{ textAlign: 'center', marginTop: 28, display: 'flex', gap: 12, justifyContent: 'center' }}>
-            <button onClick={reset} className="btn-accent">
-              <RefreshCw size={18} /> Neues Szenario
+          <div className="result-actions">
+            {scenario && side && (
+              <button className="btn btn-secondary" onClick={() => startCoaching(scenario, side)}>
+                <RotateCcw size={18} /> Noch einmal üben
+              </button>
+            )}
+            <button className="btn btn-primary" onClick={reset}>
+              <Play size={18} /> Neue Situation
             </button>
           </div>
-        </div>
+        </header>
+
+        {analysis?.error && <div className="notice notice--error">{analysis.error}</div>}
+        {analysis?.note && <div className="notice">{analysis.note}</div>}
+
+        {!analysis?.error && (
+          <>
+            <div className="score-grid">
+              <ScoreCard label={labels[0]} score={analysis?.empathy_score || 0} feedback={analysis?.empathy_feedback || ''} />
+              <ScoreCard label={labels[1]} score={analysis?.clarity_score || 0} feedback={analysis?.clarity_feedback || ''} />
+              <ScoreCard label={labels[2]} score={analysis?.result_score || 0} feedback={analysis?.result_feedback || ''} />
+            </div>
+
+            <div className="result-columns">
+              <section className="panel glass">
+                <h2>Zusammenfassung</h2>
+                <p>{analysis?.summary}</p>
+              </section>
+              {analysis?.counterpart_journey && (
+                <section className="panel glass">
+                  <h2>So hat {persona.name} das Gespräch erlebt</h2>
+                  <p>{analysis.counterpart_journey}</p>
+                </section>
+              )}
+            </div>
+
+            {analysis?.better_phrasings && analysis.better_phrasings.length > 0 && (
+              <section className="panel glass">
+                <h2>Bessere Formulierungen</h2>
+                <ol className="phrasings">
+                  {analysis.better_phrasings.map((p, i) => (
+                    <li key={i}>
+                      <div className="phrase phrase--said">
+                        <span>Gesagt</span>
+                        <p>„{p.original}“</p>
+                      </div>
+                      <div className="phrase phrase--better">
+                        <span>Besser</span>
+                        <p>„{p.better}“</p>
+                      </div>
+                      {p.why && <p className="phrase-why">{p.why}</p>}
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            )}
+
+            {analysis?.asr_notes && analysis.asr_notes.length > 0 && (
+              <div className="notice">
+                <strong>Vermutlich falsch erkannt, nicht bewertet:</strong> {analysis.asr_notes.join(', ')}
+              </div>
+            )}
+
+            {analysis?.transcript && (
+              <details className="transcript glass">
+                <summary>Transkript anzeigen</summary>
+                <pre>{analysis.transcript}</pre>
+              </details>
+            )}
+          </>
+        )}
       </div>
     )
   }
@@ -389,16 +487,50 @@ export default function CoachAvatar() {
   // ---- ERROR ----
   if (session.status === 'error') {
     return (
-      <div className="coach-container">
-        <div className="coach-placeholder coach-error">
-          <AlertCircle size={48} />
-          <h2>Fehler</h2>
-          <p>{session.error || 'Unbekannter Fehler'}</p>
-          <button onClick={reset}>Zurück zur Auswahl</button>
-        </div>
-      </div>
+      <section className="state-card glass">
+        <AlertCircle size={28} />
+        <h2>Das Gespräch konnte nicht starten</h2>
+        <p>{session.error || 'Unbekannter Fehler'}</p>
+        <button className="btn btn-secondary" onClick={reset}>Zurück zur Auswahl</button>
+      </section>
     )
   }
 
   return null
+}
+
+function CallSidebar({ scenario, side, persona, children }: {
+  scenario?: Scenario
+  side?: PracticeSide
+  persona: Persona
+  children?: React.ReactNode
+}) {
+  return (
+    <aside className="call-sidebar glass">
+      <div className="sidebar-person">
+        <Portrait persona={persona} size="sm" />
+        <div>
+          <strong>{persona.name}</strong>
+          <span>{persona.role}</span>
+        </div>
+      </div>
+      {side && (
+        <div className="sidebar-block">
+          <h4>Dein Ziel</h4>
+          <p>{side.user_goal}</p>
+        </div>
+      )}
+      <div className="sidebar-block">
+        <h4>Bewertet wird</h4>
+        <ul className="criteria criteria--light">
+          {rubricLabels(scenario).map(l => <li key={l}>{l}</li>)}
+        </ul>
+      </div>
+      <div className="sidebar-block">
+        <h4>Tipp</h4>
+        <p>Sprich so, wie du es im echten Gespräch tun würdest. {persona.name} bleibt durchgehend in der Rolle.</p>
+      </div>
+      {children}
+    </aside>
+  )
 }
