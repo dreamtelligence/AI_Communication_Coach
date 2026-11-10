@@ -4,7 +4,7 @@ Practice a difficult conversation with a live video avatar, then review feedback
 
 **[Open the live demo](https://coach.dreamtelligence.de/)** · [Dreamtelligence](https://www.dreamtelligence.de/)
 
-![Scenario and role selection](docs/images/coachvoice-rollen-auswahl.png)
+![B2B scenario selection and Fullstack/AI interview briefing](docs/images/coachvoice-interview.png)
 
 ## What this project demonstrates
 
@@ -16,7 +16,9 @@ Practice a difficult conversation with a live video avatar, then review feedback
 - Audio-upload analysis using NVIDIA Parakeet on a serverless GPU.
 - Session-bound HMAC tokens, upload validation and rate limiting; tests exercise these boundaries.
 
-Three scenarios provide six practice sides: salary negotiation (employee/manager), customer complaint (support/customer), and a first date (Lena/Jonas). The date scenario uses its own interaction rules and scoring rubric.
+Three public B2B scenarios provide five practice sides: salary negotiation (employee/manager), customer complaint (support/customer), and a **Fullstack/AI job interview** (applicant). Interviews use their own interaction rules and scoring rubric.
+
+The interview includes a visible fictional job brief, project and technical follow-up questions, an AI/data-safety case, collaboration and time for the applicant's questions. Feedback covers job relevance, clarity and technical substance. Each score must cite an actual participant statement; unsupported areas display **not assessable**, rather than zero points. These are training scores, not validated hiring assessments or predictions. [Research, design and verification limits](docs/interview-design.md).
 
 ## Main flow
 
@@ -63,6 +65,15 @@ npm run build
 ```
 
 The Python suite tests prompt construction, scenario roles, transcript parsing, analysis output, session tokens, rate limiting and Tavus request payloads. Provider calls in these unit tests are mocked; they do not start a paid session or prove live provider availability. GitHub Actions runs the suite and the frontend build on pushes and pull requests.
+
+An optional paid Gemini regression check uses five fictional interview transcripts, including unsafe technical answers and conversations with insufficient evidence:
+
+```bash
+# Supply GEMINI_API_KEY securely in the environment.
+PYTHONPATH=. .venv/bin/python scripts/evaluate_interview.py
+```
+
+See the dated [verification and recruiter review](docs/recruiter-review.md) for actual results and remaining checks. GitHub Actions was blocked by an account billing issue during that review; local checks and remote CI status are reported separately.
 
 ## Deploy the backend
 

@@ -60,9 +60,11 @@ class ScenarioPromptTests(unittest.TestCase):
         self.assertEqual(len(face_ids), 4)
         self.assertEqual(len(set(face_ids)), 4)
 
-    def test_faces_are_unique_across_all_scenarios(self) -> None:
-        face_ids = [side["face_id"] for scenario in SCENARIOS for side in scenario["practice_sides"]]
+    def test_different_characters_have_unique_faces(self) -> None:
+        # Dr. Meier also interviews applicants; the same character keeps his original face.
+        face_ids = [side["face_id"] for scenario in SCENARIOS if scenario["id"] != "interview" for side in scenario["practice_sides"]]
         self.assertEqual(len(face_ids), len(set(face_ids)))
+        self.assertEqual(get_practice_side(get_scenario("interview"))["face_id"], get_practice_side(get_scenario("salary"))["face_id"])
 
 
 class DatingScenarioTests(unittest.TestCase):
@@ -86,7 +88,8 @@ class DatingScenarioTests(unittest.TestCase):
     def test_public_scenarios_expose_rubric_labels(self) -> None:
         labels = {s["id"]: [r["label"] for r in s["rubric"]] for s in list_public_scenarios()}
         self.assertEqual(labels["salary"], ["Empathie", "Klarheit", "Ergebnis"])
-        self.assertEqual(labels["dating"], ["Interesse", "Gesprächsfluss", "Wirkung"])
+        self.assertNotIn("dating", labels)
+        self.assertEqual(labels["interview"], ["Stellenbezug", "Klarheit", "Fachliche Substanz"])
 
     def test_analysis_prompt_uses_scenario_rubric(self) -> None:
         business = build_analysis_prompt("Avatar: Hallo\nNutzer: Hallo", "salary", "employee")

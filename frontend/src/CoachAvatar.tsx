@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import {
-  AlertCircle, BadgeEuro, Heart, Loader2, MessageSquareWarning, MessagesSquare, PhoneOff, Play, RotateCcw, Video,
+  AlertCircle, BadgeEuro, BriefcaseBusiness, Heart, Loader2, MessageSquareWarning, MessagesSquare, PhoneOff, Play, RotateCcw, Video,
 } from 'lucide-react'
 import ScoreCard from '@/components/ScoreCard'
 import { DEMO_ANALYSIS } from './demo'
@@ -25,6 +25,7 @@ interface Scenario {
   practice_sides: PracticeSide[]
   rubric?: { key: string; label: string }[]
   side_prompt?: string
+  briefing?: string
 }
 
 interface SessionState {
@@ -39,11 +40,11 @@ interface SessionState {
 }
 
 export interface Analysis {
-  empathy_score: number
+  empathy_score: number | null
   empathy_feedback: string
-  clarity_score: number
+  clarity_score: number | null
   clarity_feedback: string
-  result_score: number
+  result_score: number | null
   result_feedback: string
   summary: string
   transcript?: string
@@ -60,6 +61,7 @@ const SCENARIO_ICONS: Record<string, typeof Heart> = {
   dollar: BadgeEuro,
   'message-circle': MessageSquareWarning,
   heart: Heart,
+  briefcase: BriefcaseBusiness,
 }
 
 function rubricLabels(scenario?: Scenario): string[] {
@@ -284,7 +286,7 @@ export default function CoachAvatar() {
               <section className="step" aria-labelledby="step-counterpart">
                 <h2 id="step-counterpart">
                   <span className="step-no">2</span>
-                  {selectedScenario.id === 'dating' ? 'Mit wem hast du dein Date?' : 'Welche Seite übernimmst du?'}
+                  {selectedScenario.side_prompt || 'Welche Seite übernimmst du?'}
                 </h2>
                 <div className="persona-grid">
                   {selectedScenario.practice_sides.map(side => {
@@ -307,6 +309,12 @@ export default function CoachAvatar() {
                     )
                   })}
                 </div>
+              </section>
+            )}
+            {selectedScenario?.briefing && (
+              <section className="step" aria-labelledby="step-job">
+                <h2 id="step-job"><span className="step-no">3</span>Stellenprofil · fiktives Unternehmen</h2>
+                <div className="panel glass"><p>{selectedScenario.briefing}</p></div>
               </section>
             )}
           </div>
@@ -425,13 +433,16 @@ export default function CoachAvatar() {
 
         {analysis?.error && <div className="notice notice--error">{analysis.error}</div>}
         {analysis?.note && <div className="notice">{analysis.note}</div>}
+        {scenario?.id === 'interview' && (
+          <div className="notice">Trainingsfeedback zu deinen Antworten. Die Werte sind keine validierte Eignungsbewertung und sagen keine Bewerbungschancen voraus. Nicht beurteilbar bedeutet: Es fehlt eine belastbare Grundlage.</div>
+        )}
 
         {!analysis?.error && (
           <>
             <div className="score-grid">
-              <ScoreCard label={labels[0]} score={analysis?.empathy_score || 0} feedback={analysis?.empathy_feedback || ''} />
-              <ScoreCard label={labels[1]} score={analysis?.clarity_score || 0} feedback={analysis?.clarity_feedback || ''} />
-              <ScoreCard label={labels[2]} score={analysis?.result_score || 0} feedback={analysis?.result_feedback || ''} />
+              <ScoreCard label={labels[0]} score={analysis?.empathy_score ?? null} feedback={analysis?.empathy_feedback || ''} />
+              <ScoreCard label={labels[1]} score={analysis?.clarity_score ?? null} feedback={analysis?.clarity_feedback || ''} />
+              <ScoreCard label={labels[2]} score={analysis?.result_score ?? null} feedback={analysis?.result_feedback || ''} />
             </div>
 
             <div className="result-columns">
@@ -441,7 +452,7 @@ export default function CoachAvatar() {
               </section>
               {analysis?.counterpart_journey && (
                 <section className="panel glass">
-                  <h2>So hat {persona.name} das Gespräch erlebt</h2>
+                  <h2>{scenario?.id === 'interview' ? 'Nachfragen und Gesprächsverlauf' : `So hat ${persona.name} das Gespräch erlebt`}</h2>
                   <p>{analysis.counterpart_journey}</p>
                 </section>
               )}
@@ -522,6 +533,7 @@ function CallSidebar({ scenario, side, persona, children }: {
           <p>{side.user_goal}</p>
         </div>
       )}
+      {scenario?.briefing && <div className="sidebar-block"><h4>Die Stelle · fiktives Unternehmen</h4><p>{scenario.briefing}</p></div>}
       <div className="sidebar-block">
         <h4>Bewertet wird</h4>
         <ul className="criteria criteria--light">
