@@ -33,7 +33,7 @@ Nachfragen greifen tatsächliche Antworten auf; maximal zwei je Kernfrage. Das i
 | Klarheit | `clarity_score` | Relevante, verständliche Antworten; nachvollziehbarer eigener Beitrag; passende Rückfragen |
 | Fachliche Substanz | `result_score` | Begründete Entscheidungen, Problemlösen, Tests und verantwortlicher Umgang mit KI und Daten |
 
-Die historischen API-Feldnamen bleiben kompatibel. Für jedes Kriterium stehen im Szenario fünf beschriebene Leistungsbereiche von 1–2 bis 9–10. Gute Rhetorik darf keine unsichere technische Lösung aufwerten. Hypothetische Antworten werden von berichteter Erfahrung unterschieden; beides bleibt ungeprüfter Selbstbericht.
+Die historischen API-Feldnamen bleiben kompatibel. Im Interview-Prompt heißen die Felder dagegen `role_relevance`, `communication` und `technical_depth`; erst der Parser ordnet sie den bestehenden API-Feldern zu. Damit wird der Bewerter nicht durch die alten Begriffe Empathie und Verhandlungsergebnis gelenkt. Für jedes Kriterium stehen im Szenario fünf beschriebene Leistungsbereiche von 1–2 bis 9–10. Gute Rhetorik darf keine unsichere technische Lösung aufwerten. Hypothetische Antworten werden von berichteter Erfahrung unterschieden; beides bleibt ungeprüfter Selbstbericht.
 
 Jede vergebene Note verlangt ein wörtliches Nutzerzitat in `evidence`. Der Server prüft dieses gegen die Teilnehmeraussagen und ergänzt den verifizierten Beleg im sichtbaren Feedback. Fehlende, erfundene, dem Avatar gehörende oder als Erkennungsfehler markierte Belege führen zu `null`. Ungültige Noten werden nicht auf einen scheinbar gültigen Wert gekürzt. Die Oberfläche zeigt dann „Nicht beurteilbar“ ohne Punktanzeige oder Messbalken. Fehlende Fragen oder ein abgebrochener Anruf sind keine Nullleistung.
 
