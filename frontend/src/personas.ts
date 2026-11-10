@@ -4,14 +4,15 @@ export interface Persona {
   name: string
   role: string
   mood: string
+  portrait?: string
 }
 
 const PERSONAS: Record<string, Persona> = {
-  employee: { name: 'Dr. Meier', role: 'Abteilungsleiter', mood: 'Sachlich, knappes Budget, prüft jedes Argument.' },
+  employee: { name: 'Dr. Meier', role: 'Abteilungsleiter', mood: 'Sachlich, knappes Budget, prüft jedes Argument.', portrait: '/portraits/meier.png' },
   manager: { name: 'Alex', role: 'Mitarbeiter aus deinem Team', mood: 'Fühlt sich unterbezahlt und erwartet eine Perspektive.' },
-  support: { name: 'Frau Keller', role: 'Kundin', mood: 'Verärgert über ein defektes Premium-Produkt.' },
+  support: { name: 'Frau Keller', role: 'Kundin', mood: 'Verärgert über ein defektes Premium-Produkt.', portrait: '/portraits/keller.png' },
   customer: { name: 'Herr Brandt', role: 'Kundenservice', mood: 'Will helfen, ist aber an Prozesse gebunden.' },
-  date_lena: { name: 'Lena', role: '29, Landschaftsarchitektin aus Hamburg', mood: 'Offen, neugierig, erzählt gern von draußen.' },
+  date_lena: { name: 'Lena', role: '29, Landschaftsarchitektin aus Hamburg', mood: 'Offen, neugierig, erzählt gern von draußen.', portrait: '/portraits/lena.png' },
   date_jonas: { name: 'Jonas', role: '31, Koch aus Köln', mood: 'Locker, humorvoll, kocht leidenschaftlich.' },
 }
 

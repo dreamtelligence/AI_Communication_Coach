@@ -70,7 +70,9 @@ function rubricLabels(scenario?: Scenario): string[] {
 function Portrait({ persona, size = 'lg', ringing = false }: { persona: Persona; size?: 'sm' | 'lg'; ringing?: boolean }) {
   return (
     <div className={`portrait portrait--${size} ${ringing ? 'portrait--ringing' : ''}`} aria-hidden="true">
-      <span>{initials(persona.name)}</span>
+      {persona.portrait
+        ? <img src={persona.portrait} alt="" />
+        : <span>{initials(persona.name)}</span>}
     </div>
   )
 }
