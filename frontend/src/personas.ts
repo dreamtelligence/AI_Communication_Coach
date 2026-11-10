@@ -8,7 +8,7 @@ export interface Persona {
 }
 
 const PERSONAS: Record<string, Persona> = {
-  applicant: { name: 'Dr. Meier', role: 'Teamleiter · Nordlicht Software (fiktiv)', mood: 'Fragt nach deinen Projekten, Entscheidungen und Erfahrungen im Team.', portrait: '/portraits/meier.png' },
+  applicant: { name: 'Dr. Meier', role: 'Teamleiter · Nordlicht Software (fiktiv)', mood: 'Fragt nach deinen Projekten, Entscheidungen und Erfahrungen im Team.', portrait: '/portraits/interview.png' },
   employee: { name: 'Dr. Meier', role: 'Abteilungsleiter', mood: 'Sachlich, knappes Budget, prüft jedes Argument.', portrait: '/portraits/meier.png' },
   manager: { name: 'Alex', role: 'Mitarbeiter aus deinem Team', mood: 'Fühlt sich unterbezahlt und erwartet eine Perspektive.' },
   support: { name: 'Frau Keller', role: 'Kundin', mood: 'Verärgert über ein defektes Premium-Produkt.', portrait: '/portraits/keller.png' },

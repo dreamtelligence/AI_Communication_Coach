@@ -12,7 +12,7 @@ Stand: 10. November 2026. Fokus: Bewerbende für Fullstack-Entwicklung mit KI-An
 
 Die Nordlicht Software GmbH ist erfunden. Das Briefing ist vor und während des Anrufs sichtbar und liegt auch dem Avatar und der Analyse vor. Es beschreibt eine B2B-Serviceplattform, React/TypeScript, Python- oder Node-APIs, SQL, KI-Integration, Tests, Datenschutz und Zusammenarbeit. Quereinstieg und eigene Projekte sind ausdrücklich zugelassen.
 
-Dr. Meier ist derselbe bestehende Charakter mit demselben Gesicht und Porträt. Für das Interview erhält er einen eigenen PAL mit eigenen Gesprächsregeln. Gehaltsverhandlung und Kundenbeschwerde verwenden ihre bisherigen Prompts. Das Date-Szenario bleibt intern erhalten, wird auf ausdrücklichen Nutzerwunsch aber nicht mehr in der öffentlichen B2B-Demo angeboten.
+Dr. Meier verwendet den bestehenden Avatar und erhält für das Interview einen eigenen PAL mit eigenen Gesprächsregeln. Die Interview-Vorschau zeigt das separat vom Nutzer gelieferte Originalporträt `interview.png`; der vorhandene runde Ausschnitt ohne zusätzlichen Innenabstand bleibt erhalten. Gehaltsverhandlung und Kundenbeschwerde verwenden ihre bisherigen Prompts und Porträts. Das Date-Szenario bleibt intern erhalten, wird auf ausdrücklichen Nutzerwunsch aber nicht mehr in der öffentlichen B2B-Demo angeboten.
 
 | Reihenfolge | Kernfrage / Zweck | Geeignete Nachfrage |
 | --- | --- | --- |
