@@ -12,3 +12,9 @@ frontend/dist/
 *.pyc
 .env.local
 .vercel/
+
+# Local credentials and Python environments
+.env
+.env.*
+!.env.example
+.venv/
