@@ -67,7 +67,7 @@ image = (
         "requests",
     )
     .env({"NEMO_CACHE_DIR": CACHE_DIR})
-    .add_local_dir(os.path.join(os.path.dirname(__file__), "coach_app"), remote_path="/root/coach_app")
+    .add_local_dir(os.path.join(os.path.dirname(__file__), "coach_app"), remote_path="/root/coach_app", ignore=["**/__pycache__/**", "**/*.pyc"])
     .add_local_dir(os.path.join(os.path.dirname(__file__), "frontend", "dist"), remote_path="/assets")
 )
 
@@ -133,13 +133,15 @@ class BatchTranscription:
 @app.function(image=image, secrets=_analysis_secrets())
 def analyze_transcript(text: str, scenario_id: str = "salary", practice_side: str | None = None) -> dict:
     prompt = build_analysis_prompt(text, scenario_id, practice_side)
-    result = _run_analysis_prompt(prompt)
+    result = _run_analysis_prompt(prompt, interview_transcript=text if scenario_id == "interview" else None)
     if "error" not in result:
         result["transcript"] = parse_transcript(text)["full_transcript"]
     return result
 
 
-def _run_analysis_prompt(prompt: str) -> dict:
+def _run_analysis_prompt(prompt: str, *, interview_transcript: str | None = None) -> dict:
+    if interview_transcript is not None and not parse_transcript(interview_transcript)["user_only"]:
+        return parse_analysis_json("{}", interview_transcript=interview_transcript)
     from openai import OpenAI
 
     deepseek_key = os.environ.get("DEEPSEEK_API_KEY")
@@ -152,7 +154,7 @@ def _run_analysis_prompt(prompt: str) -> dict:
             raw = ""
             try:
                 raw = generate_with_gemini(gemini_key, prompt, os.environ.get("GEMINI_MODEL", GEMINI_MODEL))
-                result = parse_analysis_json(raw)
+                result = parse_analysis_json(raw, interview_transcript=interview_transcript)
                 result["provider"] = "gemini"
                 return result
             except AnalysisProviderError as exc:
@@ -176,7 +178,7 @@ def _run_analysis_prompt(prompt: str) -> dict:
                 temperature=0.3,
                 messages=[{"role": "system", "content": system_prompt()}, {"role": "user", "content": prompt}],
             )
-            result = parse_analysis_json(response.choices[0].message.content or "")
+            result = parse_analysis_json(response.choices[0].message.content or "", interview_transcript=interview_transcript)
             result["provider"] = "deepseek"
             return result
         except Exception as exc:
@@ -261,7 +263,7 @@ def analyze_tavus_session(conversation_id: str, scenario_id: str = "salary", pra
         }
 
     prompt = build_analysis_prompt(transcript, scenario_id, practice_side)
-    result = _run_analysis_prompt(prompt)
+    result = _run_analysis_prompt(prompt, interview_transcript=transcript if scenario_id == "interview" else None)
     if "error" not in result:
         result["transcript"] = parse_transcript(transcript)["full_transcript"]
     return result

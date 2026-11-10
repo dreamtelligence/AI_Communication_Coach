@@ -16,11 +16,11 @@ class AnalyzeSessionRequest(BaseModel):
 
 
 class AnalysisResult(BaseModel):
-    empathy_score: int = Field(ge=0, le=10)
+    empathy_score: int | None = Field(ge=0, le=10)
     empathy_feedback: str
-    clarity_score: int = Field(ge=0, le=10)
+    clarity_score: int | None = Field(ge=0, le=10)
     clarity_feedback: str
-    result_score: int = Field(ge=0, le=10)
+    result_score: int | None = Field(ge=0, le=10)
     result_feedback: str
     summary: str
     transcript: str | None = None

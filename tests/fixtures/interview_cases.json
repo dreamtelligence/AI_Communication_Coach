@@ -1,0 +1,27 @@
+[
+  {
+    "id": "concrete",
+    "expect": "strong",
+    "transcript": "assistant: Was führt Sie zu unserer Fullstack-Stelle mit KI-Schwerpunkt?\nuser: Ich habe bisher selbstständig Webanwendungen umgesetzt und möchte jetzt in einem Produktteam mit Reviews arbeiten. Ihre Verbindung aus React-Oberfläche, API und KI passt zu meinem Serviceportal. Bei SQL-Optimierung fehlt mir noch Tiefe, daran arbeite ich gezielt.\nassistant: Welchen Anteil hatten Sie an diesem Projekt?\nuser: Ich habe das React-Frontend, die Python-API und das SQL-Schema selbst entwickelt. Statt einer zweiten Datenhaltung habe ich zunächst PostgreSQL verwendet, weil die gemessene Last gering war. Ich habe den Buchungsweg mit Integrationstests geprüft und die Anwendung deployed. Drei Testpersonen konnten danach ohne Hilfe einen Termin buchen.\nassistant: Wie schützen Sie unseren KI-Assistenten vor falschen Auskünften und Zugriff auf fremde Kundendaten?\nuser: Zuerst kläre ich Datenarten und erlaubte Aktionen. Die API prüft die Identität und die Mandantenzugehörigkeit vor jeder Datenbankabfrage. Ein Prompt reicht dafür nicht. An das Modell gehen nur freigegebene Daten ohne Secrets. Mit einem Testset prüfe ich richtige Antworten, fremde Mandanten und bösartige Inhalte. Unsichere Antworten müssen zur menschlichen Prüfung gehen. Bei Anbieterausfall fällt das System auf eine verständliche Fehlermeldung zurück.\nassistant: Erzählen Sie von einem Fehler und Ihrem Vorgehen.\nuser: Nach einem Release schlugen Login-Callbacks sporadisch fehl. Ich habe den Release eingegrenzt, das neue Cookie-Verhalten mit einem Testnutzer reproduziert und zuerst zurückgerollt. Ein Regressionstest für den Callback hat den späteren Fix geprüft. Ich habe die betroffenen Testpersonen informiert und den Fehler im Changelog dokumentiert.\nassistant: Wann änderten Sie eine Lösung nach Feedback?\nuser: Ein Kollege konnte meine Filterfunktion im Review nicht nachvollziehen. Ich ließ mir den konkreten Fall zeigen und vereinfachte sie auf seinen Vorschlag hin. Der gleiche Test blieb grün. Seitdem bespreche ich die Lesbarkeit vor der Optimierung.\nassistant: Welche Fragen haben Sie an uns?\nuser: Woran würden Sie nach drei Monaten erkennen, dass ich gut angekommen bin, und wer begleitet das erste Deployment?"
+  },
+  {
+    "id": "vague",
+    "expect": "weak",
+    "transcript": "assistant: Was führt Sie zu unserer Fullstack-Stelle mit KI-Schwerpunkt?\nuser: KI ist gerade überall. Ich bin motiviert und sehr teamfähig.\nassistant: Was interessiert Sie konkret an den beschriebenen Aufgaben?\nuser: Das Gesamtpaket, ich kann eigentlich alles.\nassistant: Welches eigene Webprojekt zeigt Ihren Beitrag am besten?\nuser: Ich habe schon viel gemacht, zum Beispiel Webseiten.\nassistant: Was haben Sie selbst entschieden und wie haben Sie das Ergebnis geprüft?\nuser: Es hat gut funktioniert. Details weiß ich gerade nicht.\nassistant: Wie verhindern Sie falsche Antworten und Zugriff auf fremde Kundendaten im KI-Assistenten?\nuser: Da würde ich eine gute KI nehmen. Das wird dann schon passen.\nassistant: Wie würden Sie das prüfen?\nuser: Das sehe ich dann.\nassistant: Erzählen Sie von einem Fehler und Ihrem Vorgehen.\nuser: Fehler passieren mir eher nicht.\nassistant: Wie würden Sie vorgehen, wenn nach einem Release einige Anmeldungen scheitern?\nuser: Ich probiere einfach irgendwas, bis es geht.\nassistant: Wann haben Sie nach Feedback eine Lösung geändert?\nuser: Ich bin sehr offen, aber meine Lösungen sind meistens richtig.\nassistant: Haben Sie Fragen an uns?\nuser: Nein, passt schon."
+  },
+  {
+    "id": "confident_but_unsafe",
+    "expect": "unsafe",
+    "transcript": "assistant: Wie verhindern Sie, dass unser KI-Assistent fremde Kundendaten zeigt?\nuser: Ich sende die vollständige Datenbank und den produktiven API-Key in den Systemprompt. Darin steht, dass jeder Kunde nur seine Daten sehen darf. Die KI hält sich daran. So sparen wir Berechtigungsprüfungen.\nassistant: Was passiert, wenn die KI die Anweisung missachtet?\nuser: Das kann nicht passieren, wenn man den Prompt klar formuliert.\nassistant: Wie prüfen Sie falsche Antworten vor dem Release?\nuser: Ich stelle eine Frage. Wenn die Antwort gut klingt, ist das Modell geeignet. Ein Testset brauchen wir nicht.\nassistant: Was tun Sie bei einem Loginfehler nach einem Release?\nuser: Ich schalte die Authentifizierung ab und arbeite direkt mit den echten Kundendaten weiter. Dann muss niemand warten.\nassistant: Welche Absicherung würden Sie vorsehen?\nuser: Keine, meine Priorität ist immer Geschwindigkeit."
+  },
+  {
+    "id": "greeting_only",
+    "expect": "unrated",
+    "transcript": "assistant: Guten Tag, was führt Sie zu unserer Fullstack-Stelle?\nuser: Guten Tag. Entschuldigung, mein Mikrofon funktioniert nicht. Ich muss leider abbrechen.\nassistant: Kein Problem, auf Wiedersehen."
+  },
+  {
+    "id": "avatar_only",
+    "expect": "unrated",
+    "transcript": "assistant: Wichtig wären Berechtigungen vor dem Datenzugriff, automatisierte Tests und ein Rollback bei Fehlern.\nassistant: Haben Sie mich gehört?"
+  }
+]
