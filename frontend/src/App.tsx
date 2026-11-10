@@ -112,10 +112,10 @@ function App() {
         {activeTab === 'upload' && (
           <>
             <header className="page-intro">
-              <h1>Aufnahme auswerten.</h1>
+              <h1>Englische Aufnahme auswerten.</h1>
               <p>
-                Lade die Aufnahme eines echten Gesprächs hoch. Sie wird abgeschrieben und nach Empathie,
-                Klarheit und Ergebnis bewertet.
+                Lade eine englischsprachige Übungsaufnahme mit einer sprechenden Person hoch.
+                Sie wird abgeschrieben und nach Empathie, Klarheit und Ergebnis bewertet.
               </p>
             </header>
 

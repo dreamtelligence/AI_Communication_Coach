@@ -6,6 +6,10 @@ Practice a difficult conversation with a live video avatar, then review feedback
 
 ![B2B scenario selection and Fullstack/AI interview briefing](docs/images/coachvoice-interview.png)
 
+## Reviewing the project
+
+Start with [scenario definitions](coach_app/scenarios.py), then [transcript parsing](coach_app/transcript.py) and [analysis with evidence checks](coach_app/analysis.py). [The live session component](frontend/src/CoachAvatar.tsx) connects those boundaries in the browser. The [documentation index](docs/README.md) separates architecture, interview research and the dated release checks.
+
 ## What this project demonstrates
 
 - React 18, TypeScript and Vite frontend with responsive scenario and role selection.
@@ -13,7 +17,7 @@ Practice a difficult conversation with a live video avatar, then review feedback
 - Tavus video roleplay with separate personas, German conversation settings and visible AI disclosure.
 - Transcript parsing that separates the participant's statements from the avatar's context.
 - Structured feedback on empathy, clarity and outcomes, including alternative phrasings and handling of speech-recognition errors.
-- Audio-upload analysis using NVIDIA Parakeet on a serverless GPU.
+- English single-speaker audio-upload analysis using NVIDIA Parakeet on a serverless GPU.
 - Session-bound HMAC tokens, upload validation and rate limiting; tests exercise these boundaries.
 
 Three public B2B scenarios provide five practice sides: salary negotiation (employee/manager), customer complaint (support/customer), and a **Fullstack/AI job interview** (applicant). Interviews use their own interaction rules and scoring rubric.
@@ -33,6 +37,8 @@ flowchart LR
 ```
 
 The upload flow sends audio to the backend, transcribes it with Parakeet and passes the transcript to the same analysis layer. Live calls and GPU uploads consume provider resources; the demo is rate limited.
+
+The upload model is [NVIDIA Parakeet TDT 0.6B v2](https://huggingface.co/nvidia/parakeet-tdt-0.6b-v2), an English ASR model. Uploads do not perform speaker diarization and use the default communication rubric. German live roleplay uses Tavus's separate transcript path; the upload path is not a German interview recording evaluator.
 
 ## Run the frontend
 
@@ -100,13 +106,13 @@ Configure credentials as Modal secrets, never in source control:
 
 | Area | Entry point |
 | --- | --- |
-| Frontend and live session lifecycle | `frontend/src/CoachAvatar.tsx` |
-| Scenario and role definitions | `coach_app/scenarios.py` |
-| Tavus integration | `coach_app/tavus_client.py` |
-| Transcript handling and analysis | `coach_app/transcript.py`, `coach_app/analysis.py` |
-| Request and session boundaries | `coach_app/security.py` |
-| HTTP routes and Modal deployment | `transcribe_demo.py` |
-| Automated checks | `tests/`, `.github/workflows/ci.yml` |
+| Frontend and live session lifecycle | [CoachAvatar](frontend/src/CoachAvatar.tsx) |
+| Scenario and role definitions | [Scenarios](coach_app/scenarios.py) |
+| Tavus integration | [Tavus client](coach_app/tavus_client.py) |
+| Transcript handling and analysis | [Transcript parser](coach_app/transcript.py), [analysis](coach_app/analysis.py) |
+| Request and session boundaries | [Security](coach_app/security.py) |
+| HTTP routes and Modal deployment | [Deployment entry point](transcribe_demo.py) |
+| Automated checks | [Tests](tests/), [CI](.github/workflows/ci.yml) |
 
 ## Scope and limitations
 
