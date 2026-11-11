@@ -208,6 +208,10 @@ export default function CoachAvatar() {
         })
         if (!resp.ok) return
         const data = await resp.json()
+        if (data.connection_expired) {
+          handleCallError('Die Videoverbindung wurde unterbrochen und die Leitung automatisch freigegeben. Bitte starte ein neues Gespräch.')
+          return
+        }
         if (data.status === 'ended' && !autoAnalyzeStarted.current) {
           autoAnalyzeStarted.current = true
           window.clearInterval(timer)
@@ -218,7 +222,7 @@ export default function CoachAvatar() {
       }
     }, 5000)
     return () => window.clearInterval(timer)
-  }, [session.status, session.conversationId, session.sessionToken, stopAndAnalyze])
+  }, [session.status, session.conversationId, session.sessionToken, stopAndAnalyze, handleCallError])
 
   const inCall = session.status === 'active' || session.status === 'analyzing'
   const elapsed = useElapsed(session.status === 'active')

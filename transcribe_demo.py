@@ -363,7 +363,10 @@ def conversation_status(conversation_id: str, request: Request) -> dict:
     except TavusError as exc:
         print(f"Tavus status lookup failed: {exc}")
         raise HTTPException(status_code=502, detail="Status nicht verfügbar.") from exc
-    return {"status": conversation.get("status", "unknown")}
+    return {
+        "status": conversation.get("status", "unknown"),
+        "connection_expired": session_leases.was_expired(conversation_id),
+    }
 
 
 @web_app.post("/api/session/analyze")

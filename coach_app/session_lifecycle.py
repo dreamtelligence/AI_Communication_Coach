@@ -42,14 +42,23 @@ class SessionLeases:
         end_conversation(self.api_key() or "", conversation_id)
         self.store.pop(conversation_id, None)
 
+    def was_expired(self, conversation_id: str) -> bool:
+        return self.store.get(f"expired:{conversation_id}", 0) > time.time()
+
     def expire(self) -> dict[str, int]:
         ended = failed = 0
         for conversation_id, _ in list(self.store.items()):
             # Re-read: a heartbeat may have renewed the deadline since iteration started.
             deadline = self.store.get(conversation_id)
+            if conversation_id.startswith("expired:"):
+                if deadline is not None and deadline <= time.time():
+                    self.store.pop(conversation_id, None)
+                continue
             if deadline is None or deadline > time.time():
                 continue
             try:
+                # Keep the reason briefly so a returning browser does not grade an abandoned call.
+                self.store.put(f"expired:{conversation_id}", time.time() + 3600)
                 self.end(conversation_id)
                 ended += 1
             except (TavusError, OSError):

@@ -33,6 +33,20 @@ class SessionLifecycleTests(unittest.TestCase):
         end.assert_called_once_with("test-key", self.key)
         self.assertNotIn(self.key, self.store)
         self.assertIn("clive12345", self.store)
+        with patch("coach_app.session_lifecycle.time.time", return_value=222):
+            self.assertTrue(self.leases.was_expired(self.key))
+
+    def test_timeout_reason_is_retained_briefly_without_another_provider_end(self):
+        self.store[f"expired:{self.key}"] = 500
+        with patch("coach_app.session_lifecycle.time.time", return_value=300), \
+             patch("coach_app.session_lifecycle.end_conversation") as end:
+            self.assertTrue(self.leases.was_expired(self.key))
+            self.assertEqual(self.leases.expire(), {"ended": 0, "failed": 0})
+            end.assert_not_called()
+        with patch("coach_app.session_lifecycle.time.time", return_value=501):
+            self.assertFalse(self.leases.was_expired(self.key))
+            self.leases.expire()
+        self.assertNotIn(f"expired:{self.key}", self.store)
 
     def test_expired_or_missing_lease_cannot_be_resurrected(self):
         self.store[self.key] = 100

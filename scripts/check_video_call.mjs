@@ -20,6 +20,8 @@ for (const engine of ['chromium', 'webkit']) {
       })
       const errors = []
       const calls = []
+      let expired = false
+      let analyses = 0
       if (engine === 'chromium' && width === 393) await page.clock.install()
       page.on('pageerror', e => errors.push(e.message))
       await page.route(/(?:@daily-co_daily-js|daily-iframe-esm|daily-esm)[^/]*\.js/, r => r.fulfill({ contentType: 'text/javascript', body: fixture }))
@@ -28,7 +30,11 @@ for (const engine of ['chromium', 'webkit']) {
       } }))
       await page.route('**/api/session/cfixture1234/**', r => {
         calls.push(new URL(r.request().url()).pathname)
-        return r.fulfill({ json: { status: 'active' } })
+        return r.fulfill({ json: { status: expired ? 'ended' : 'active', connection_expired: expired } })
+      })
+      await page.route('**/api/session/analyze', r => {
+        analyses++
+        return r.fulfill({ json: {} })
       })
       await page.goto(process.env.CHECK_URL || 'http://127.0.0.1:3291/')
       await page.getByRole('button', { name: 'Gespräch starten', exact: true }).click()
@@ -66,6 +72,15 @@ for (const engine of ['chromium', 'webkit']) {
       if (engine === 'chromium' && width === 393) await page.clock.runFor(100)
       await released
       assert.ok(calls.some(p => p.endsWith('/end')), 'Unmount must release the provider session')
+      if (engine === 'chromium' && width === 393) {
+        await page.getByRole('button', { name: 'Live-Training', exact: true }).click()
+        await page.getByRole('button', { name: 'Gespräch starten', exact: true }).click()
+        await page.getByRole('button', { name: 'Mikrofon ausschalten', exact: true }).waitFor()
+        expired = true
+        await page.clock.runFor(5500)
+        await page.getByRole('button', { name: 'Zurück zur Auswahl', exact: true }).waitFor()
+        assert.equal(analyses, 0, 'An abandoned call must not trigger paid analysis')
+      }
       assert.deepEqual(errors, [])
       console.log(`${engine} ${width}px: ${boxes.stage.width} × ${boxes.stage.height}, PiP/controls/release passed`)
       await page.close()
