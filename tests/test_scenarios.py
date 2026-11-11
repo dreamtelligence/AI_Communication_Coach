@@ -7,14 +7,29 @@ from coach_app.scenarios import (
     PAL_VERSION,
     SCENARIOS,
     build_pal_prompt,
+    build_conversation_context,
     get_practice_side,
     get_scenario,
     get_stt_hotwords,
     list_public_scenarios,
+    scenario_side_payload,
 )
 
 
 class ScenarioPromptTests(unittest.TestCase):
+    def test_business_briefings_follow_the_selected_role_through_public_and_session_payloads(self) -> None:
+        public = {scenario["id"]: scenario for scenario in list_public_scenarios()}
+        for scenario_id in ("salary", "complaint"):
+            scenario = get_scenario(scenario_id)
+            self.assertEqual(public[scenario_id]["briefing"], scenario.get("briefing"))
+            for side in scenario["practice_sides"]:
+                with self.subTest(scenario=scenario_id, side=side["id"]):
+                    selected = next(s for s in public[scenario_id]["practice_sides"] if s["id"] == side["id"])
+                    self.assertEqual(selected["briefing"], side["briefing"])
+                    self.assertEqual(scenario_side_payload(scenario, side["id"])["briefing"], side["briefing"])
+                    self.assertIn(side["briefing"], build_conversation_context(scenario, side["id"]))
+            self.assertNotEqual(scenario["practice_sides"][0]["briefing"], scenario["practice_sides"][1]["briefing"])
+
     def test_complaint_prompt_contains_progress_and_boundary_rules(self) -> None:
         scenario = get_scenario("complaint")
         prompt = build_pal_prompt(scenario, "support")

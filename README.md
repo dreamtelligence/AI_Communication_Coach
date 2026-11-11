@@ -22,6 +22,8 @@ Start with [scenario definitions](coach_app/scenarios.py), then [transcript pars
 
 Three public B2B scenarios provide five practice sides: salary negotiation (employee/manager), customer complaint (support/customer), and a **Fullstack/AI job interview** (applicant). Interviews use their own interaction rules and scoring rubric.
 
+Salary negotiation and customer complaint include a role-specific preparation brief. Switching practice sides updates the displayed situation, and the same brief is supplied to the avatar as conversation context.
+
 The interview includes a visible fictional job brief, project and technical follow-up questions, an AI/data-safety case, collaboration and time for the applicant's questions. Feedback covers job relevance, clarity and technical substance. Each score must cite an actual participant statement; unsupported areas display **not assessable**, rather than zero points. These are training scores, not validated hiring assessments or predictions. [Research, design and verification limits](docs/interview-design.md).
 
 ## Main flow

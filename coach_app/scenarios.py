@@ -237,6 +237,14 @@ SCENARIOS: list[dict[str, Any]] = [
             {
                 "id": "employee",
                 "label": "Mitarbeiter trainieren",
+                "briefing": (
+                    "Fiktives Mitarbeitergespräch: Du möchtest mit Dr. Meier, deinem Abteilungsleiter, über eine "
+                    "Gehaltserhöhung sprechen. Er schätzt deine Arbeit, muss eine Anpassung aber gegenüber dem "
+                    "Management begründen und hat ein begrenztes Budget. Bereite ein bis zwei konkrete Beispiele "
+                    "für deine Leistungen oder zusätzliche Verantwortung sowie einen realistischen Wunschkorridor vor. "
+                    "Feste Gehaltszahlen sind nicht vorgegeben; du kannst für die Übung plausible Angaben wählen. "
+                    "Ziel ist eine klare Vereinbarung: eine Anpassung, nachvollziehbare Kriterien oder ein verbindlicher Folgetermin."
+                ),
                 "face_id": FACE_THOMAS,
                 "user_role": "Mitarbeiterin oder Mitarbeiter, der eine faire Gehaltserhöhung verhandeln möchte.",
                 "avatar_role": "Du bist Dr. Meier, Abteilungsleiter. Du schätzt die Leistung des Mitarbeiters, hast aber nur begrenztes Budget und musst jede Anpassung gegenüber dem Management begründen. Du bist sachlich, freundlich und prüfst genau, ob die Argumente konkret genug sind.",
@@ -247,6 +255,14 @@ SCENARIOS: list[dict[str, Any]] = [
             {
                 "id": "manager",
                 "label": "Führungskraft trainieren",
+                "briefing": (
+                    "Fiktives Führungsgespräch: Dein Mitarbeiter Alex hat in den vergangenen Monaten zusätzliche "
+                    "Verantwortung übernommen und fühlt sich unterbezahlt. Er erwartet Anerkennung und eine konkrete "
+                    "Perspektive. Du führst das Gespräch als Führungskraft und musst Leistung, Erwartungen und "
+                    "Budget zusammenbringen. Konkrete Gehaltszahlen und Budgetgrenzen sind nicht vorgegeben; "
+                    "lege für die Übung einen plausiblen Rahmen fest. Kläre Alex' Argumente, erläutere deinen "
+                    "Entscheidungsspielraum und vereinbare einen fairen nächsten Schritt mit Kriterien und Termin."
+                ),
                 "face_id": FACE_DANIEL,
                 "user_role": "Führungskraft, die auf eine Gehaltsforderung professionell, fair und budgetbewusst reagieren muss.",
                 "avatar_role": "Du bist Alex, ein leistungsstarker Mitarbeiter. Du fühlst dich unterbezahlt, hast in den letzten Monaten viel Verantwortung übernommen und erwartest eine klare Perspektive. Du bist respektvoll, aber innerlich angespannt und wirst enttäuscht, wenn deine Leistung relativiert wird.",
@@ -266,6 +282,14 @@ SCENARIOS: list[dict[str, Any]] = [
             {
                 "id": "support",
                 "label": "Service trainieren",
+                "briefing": (
+                    "Fiktiver Reklamationsfall: Du arbeitest im Kundenservice. Frau Keller hat vor sieben Wochen "
+                    "für 1.299 Euro den Kaffeevollautomaten „Barista Pro X“ gekauft. Nach drei Wochen war die "
+                    "Milchdüse defekt und das Gerät wurde repariert. Seit gestern lässt es sich gar nicht mehr "
+                    "einschalten. Nach zwanzig Minuten Warteschleife ist Frau Keller verärgert und möchte keine "
+                    "zweite Reparatur. Sie wünscht ein Ersatzgerät oder eine Rückerstattung. Nimm ihren Ärger ernst, "
+                    "kläre die Lösungsmöglichkeiten und vereinbare konkrete nächste Schritte, einen Zeitrahmen und die Rücksendung."
+                ),
                 "face_id": FACE_ROSE,
                 "user_role": "Service-Mitarbeiterin oder Service-Mitarbeiter, der eine verärgerte Kundin beruhigen und eine Lösung finden muss.",
                 "avatar_role": "Du bist Frau Keller, eine verärgerte Kundin. Du hast viel Geld für ein Premium-Produkt bezahlt, das nach kurzer Zeit defekt ist. Du bist enttäuscht, fühlst dich nicht ernst genommen und willst eine verbindliche Lösung statt Standardfloskeln.",
@@ -298,6 +322,14 @@ SCENARIOS: list[dict[str, Any]] = [
             {
                 "id": "customer",
                 "label": "Kunde trainieren",
+                "briefing": (
+                    "Fiktiver Reklamationsfall: Du hast vor sieben Wochen für 1.299 Euro den Kaffeevollautomaten "
+                    "„Barista Pro X“ gekauft. Nach drei Wochen musste die Milchdüse repariert werden; seit gestern "
+                    "geht das Gerät gar nicht mehr an. Du möchtest keine weitere Reparatur, sondern einen Austausch "
+                    "oder eine Rückerstattung. Dein Gegenüber ist Herr Brandt vom Kundenservice. Für einen Austausch "
+                    "braucht er im Rollenspiel die Freigabe seiner Teamleitung. Erkläre Kaufzeitpunkt, Fehler und "
+                    "bisherige Reparatur, formuliere deinen Wunsch klar und vereinbare den nächsten Schritt samt Rückmeldung."
+                ),
                 "face_id": FACE_JAMES,
                 "user_role": "Kundin oder Kunde, der eine berechtigte Beschwerde klar, bestimmt und lösungsorientiert vorbringen möchte.",
                 "avatar_role": "Du bist Herr Brandt aus dem Kundenservice. Du willst helfen, bist aber an interne Prozesse gebunden und brauchst klare Informationen. Wenn der Nutzer respektvoll und konkret bleibt, wirst du kooperativer. Wenn er nur Druck macht, verweist du stärker auf Regeln.",
@@ -487,6 +519,7 @@ def get_stt_hotwords(scenario: dict[str, Any]) -> str:
 
 def build_conversation_context(scenario: dict[str, Any], practice_side_id: str | None = None) -> str:
     side = get_practice_side(scenario, practice_side_id)
+    briefing = side.get("briefing")
     return (
         f"Szenario: {scenario['title']}\n"
         f"Trainierte Nutzerrolle: {side['user_role']}\n"
@@ -494,7 +527,7 @@ def build_conversation_context(scenario: dict[str, Any], practice_side_id: str |
         f"Ziel des Nutzers: {side['user_goal']}\n"
         "Sprache: ausschließlich Deutsch. Keine englischen Sätze, auch nicht bei Begrüßung oder Rückfragen.\n"
         "Führe nur das Rollenspiel. Keine Analyse, keine Coaching-Tipps, keine Meta-Erklärungen."
-    )
+    ) + (f"\nAusgangssituation: {briefing}" if briefing else "")
 
 
 def scenario_side_payload(scenario: dict[str, Any], practice_side_id: str | None = None) -> dict[str, Any]:
@@ -512,7 +545,7 @@ def scenario_side_payload(scenario: dict[str, Any], practice_side_id: str | None
         "user_goal": side["user_goal"],
         "rubric": [{"key": item["key"], "label": item["label"]} for item in get_rubric(scenario)],
         "side_prompt": scenario.get("side_prompt", "Welche Seite möchtest du trainieren?"),
-        "briefing": scenario.get("briefing"),
+        "briefing": side.get("briefing", scenario.get("briefing")),
     }
 
 
@@ -524,6 +557,7 @@ def _public_scenario(scenario: dict[str, Any]) -> dict[str, Any]:
             "user_role": side["user_role"],
             "avatar_role": side["avatar_role"],
             "user_goal": side["user_goal"],
+            "briefing": side.get("briefing", scenario.get("briefing")),
         }
         for side in scenario["practice_sides"]
     ]

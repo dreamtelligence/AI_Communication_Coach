@@ -13,6 +13,7 @@ interface PracticeSide {
   user_role: string
   avatar_role: string
   user_goal: string
+  briefing?: string
 }
 
 interface Scenario {
@@ -329,10 +330,10 @@ export default function CoachAvatar() {
                 </div>
               </section>
             )}
-            {selectedScenario?.briefing && (
-              <section className="step" aria-labelledby="step-job">
-                <h2 id="step-job"><span className="step-no">3</span>Stellenprofil · fiktives Unternehmen</h2>
-                <div className="panel glass"><p>{selectedScenario.briefing}</p></div>
+            {(selectedSide?.briefing || selectedScenario?.briefing) && (
+              <section className="step" aria-labelledby="step-briefing">
+                <h2 id="step-briefing"><span className="step-no">3</span>{selectedScenario?.id === 'interview' ? 'Stellenprofil · fiktives Unternehmen' : 'Deine Ausgangssituation · fiktives Rollenspiel'}</h2>
+                <div className="panel glass"><p>{selectedSide?.briefing || selectedScenario?.briefing}</p></div>
               </section>
             )}
           </div>
