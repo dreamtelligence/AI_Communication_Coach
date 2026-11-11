@@ -13,7 +13,7 @@ for (const engine of ['chromium', 'webkit']) {
     ...(engine === 'chromium' && process.env.BROWSER_EXECUTABLE ? { executablePath: process.env.BROWSER_EXECUTABLE } : {}),
   })
   try {
-    for (const width of [393, 768, 1440]) {
+    for (const width of [320, 393, 768, 1440]) {
       const page = await browser.newPage({
         ...(engine === 'webkit' && width === 393 ? devices['iPhone 13'] : {}),
         viewport: { width, height: 852 },
@@ -44,12 +44,22 @@ for (const engine of ['chromium', 'webkit']) {
         const stage = el.getBoundingClientRect()
         const video = el.querySelector('.avatar-video').getBoundingClientRect()
         const self = el.querySelector('.self-preview').getBoundingClientRect()
-        return { stage: stage.toJSON(), video: video.toJSON(), self: self.toJSON(), overflow: document.documentElement.scrollWidth > innerWidth }
+        const controls = el.querySelector('.video-controls').getBoundingClientRect()
+        return { stage: stage.toJSON(), video: video.toJSON(), self: self.toJSON(), controls: controls.toJSON(), overflow: document.documentElement.scrollWidth > innerWidth }
       })
       assert.ok(boxes.stage.width > 240 && boxes.stage.height > 240, 'Call stage must not collapse')
       assert.equal(boxes.video.height, boxes.stage.height)
       assert.ok(boxes.self.width >= 84 && boxes.self.width < boxes.stage.width / 3)
       assert.ok(boxes.self.right <= boxes.stage.right && boxes.self.top >= boxes.stage.top)
+      if (width < 760) {
+        assert.ok(Math.abs(boxes.self.height / boxes.self.width - 1.5) < 0.02, 'Mobile preview must retain width and double its original height')
+        assert.ok(Math.abs(boxes.stage.bottom - boxes.self.bottom - 16) < 1, 'Mobile preview needs a bottom inset')
+        assert.ok(Math.abs(boxes.stage.right - boxes.self.right - 16) < 1, 'Mobile preview needs a right inset')
+        assert.ok(boxes.controls.right + 8 < boxes.self.left, 'Media buttons must not overlap the mobile preview')
+      } else {
+        assert.ok(Math.abs(boxes.self.height / boxes.self.width - 0.75) < 0.02, 'Desktop preview keeps its landscape ratio')
+        assert.ok(Math.abs(boxes.self.top - boxes.stage.top - 64) < 1, 'Desktop preview keeps its upper corner')
+      }
       assert.equal(boxes.overflow, false)
       assert.equal(calls.filter(p => p.endsWith('/end')).length, 0, 'StrictMode must not end a new call')
       await page.getByRole('button', { name: 'Mikrofon ausschalten', exact: true }).click()

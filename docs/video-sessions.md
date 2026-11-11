@@ -10,6 +10,8 @@ A separate provider error reported maximum concurrent conversations. An owner-co
 
 `VideoCall.tsx` uses the Daily call object behind Tavus to render the remote avatar as the main video and the muted, mirrored local camera as a small overlay. Microphone and camera buttons retain native browser permission handling; blocked remote audio exposes a user-gesture playback button. The existing backend still creates the Tavus conversation, owns provider credentials and authorizes session operations. The Daily SDK is loaded only when a conversation starts. Its CSP sources are allowed explicitly, without enabling `unsafe-eval`.
 
+At the owner's follow-up request, phone widths below 760 pixels use the same preview width at twice its original height (2:3), placed 16 pixels from the bottom and right edges. Media buttons sit to the left to avoid overlap at 320 pixels. Desktop keeps its 4:3 preview in the upper corner. The browser regression covers these positions at 320, 393, 768 and 1440 pixels.
+
 ## Abandoned-call recovery
 
 - Each new conversation receives a server-created 120-second deadline in the persistent Modal dictionary `coach-conversation-leases`. Failed registration closes the provider session instead of returning an untracked call.
