@@ -27,7 +27,9 @@ class ScenarioPromptTests(unittest.TestCase):
                     selected = next(s for s in public[scenario_id]["practice_sides"] if s["id"] == side["id"])
                     self.assertEqual(selected["briefing"], side["briefing"])
                     self.assertEqual(scenario_side_payload(scenario, side["id"])["briefing"], side["briefing"])
-                    self.assertIn(side["briefing"], build_conversation_context(scenario, side["id"]))
+                    context = build_conversation_context(scenario, side["id"])
+                    self.assertIn(side["briefing"], context)
+                    self.assertIn("die Du-Ansprache meint den Menschen, nicht dich als Avatar", context)
             self.assertNotEqual(scenario["practice_sides"][0]["briefing"], scenario["practice_sides"][1]["briefing"])
 
     def test_complaint_prompt_contains_progress_and_boundary_rules(self) -> None:

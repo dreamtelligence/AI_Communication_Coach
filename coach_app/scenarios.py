@@ -527,7 +527,10 @@ def build_conversation_context(scenario: dict[str, Any], practice_side_id: str |
         f"Ziel des Nutzers: {side['user_goal']}\n"
         "Sprache: ausschließlich Deutsch. Keine englischen Sätze, auch nicht bei Begrüßung oder Rückfragen.\n"
         "Führe nur das Rollenspiel. Keine Analyse, keine Coaching-Tipps, keine Meta-Erklärungen."
-    ) + (f"\nAusgangssituation: {briefing}" if briefing else "")
+    ) + (
+        f"\nVorbereitungsbriefing für den Menschen (die Du-Ansprache meint den Menschen, nicht dich als Avatar): {briefing}"
+        if briefing else ""
+    )
 
 
 def scenario_side_payload(scenario: dict[str, Any], practice_side_id: str | None = None) -> dict[str, Any]:
