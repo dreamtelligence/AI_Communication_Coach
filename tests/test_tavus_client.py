@@ -14,6 +14,12 @@ def _ok(json_body: dict) -> mock.Mock:
 
 
 class TavusPayloadTests(unittest.TestCase):
+    def test_concurrency_limit_has_actionable_message(self) -> None:
+        response = mock.Mock(status_code=400, text='{"message":"User has reached maximum concurrent conversations"}')
+        with mock.patch.object(tavus_client.requests, "post", return_value=response):
+            with self.assertRaisesRegex(tavus_client.TavusCapacityError, "Videoleitungen"):
+                tavus_client.create_conversation("key", "p123", get_scenario("salary"))
+
     def test_pal_uses_current_tavus_models_and_german(self) -> None:
         scenario = get_scenario("salary")
         with mock.patch.object(tavus_client.requests, "post", return_value=_ok({"pal_id": "p123"})) as post:

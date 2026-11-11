@@ -3,6 +3,7 @@ import {
   AlertCircle, BadgeEuro, BriefcaseBusiness, Heart, Loader2, MessageSquareWarning, MessagesSquare, PhoneOff, Play, RotateCcw, Video,
 } from 'lucide-react'
 import ScoreCard from '@/components/ScoreCard'
+import VideoCall, { releaseSession } from './VideoCall'
 import { DEMO_ANALYSIS } from './demo'
 import { initials, personaFor, type Persona } from './personas'
 
@@ -99,6 +100,14 @@ export default function CoachAvatar() {
   const [selectedSideId, setSelectedSideId] = useState('')
   const [setupStatus, setSetupStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const [analysis, setAnalysis] = useState<Analysis | null>(null)
+  const handleCallError = useCallback((error: string) => {
+    setSession(current => ({ ...current, status: 'error', error }))
+  }, [])
+  const mounted = useRef(true)
+  useEffect(() => {
+    mounted.current = true
+    return () => { mounted.current = false }
+  }, [])
 
   useEffect(() => {
     const demo = new URLSearchParams(window.location.search).get('demo')
@@ -138,6 +147,11 @@ export default function CoachAvatar() {
 
       if (!resp.ok || data.error) {
         setSession({ status: 'error', error: data.error || data.detail || 'Session konnte nicht erstellt werden.', scenario, practiceSide })
+        return
+      }
+
+      if (!mounted.current) {
+        void releaseSession(data.conversation_id, data.session_token).catch(() => {})
         return
       }
 
@@ -375,15 +389,16 @@ export default function CoachAvatar() {
     return (
       <div className="call-layout">
         <div className="stage stage--call">
-          <iframe
-            src={session.embedUrl}
-            allow="microphone; camera; autoplay; fullscreen; display-capture"
-            title={`Video-Gespräch mit ${persona.name}`}
-            className="call-frame"
+          <VideoCall
+            url={session.embedUrl}
+            conversationId={session.conversationId!}
+            sessionToken={session.sessionToken!}
+            name={persona.name}
+            onError={handleCallError}
           />
           <div className="call-overlay-top">
             <span className="stage-chip stage-chip--live"><span className="dot" /> Live {elapsed}</span>
-            <span className="stage-chip">{scenario?.title}</span>
+            <span className="stage-chip">{persona.name} · KI-Avatar</span>
           </div>
           {session.status === 'analyzing' && (
             <div className="call-analyzing">
@@ -502,7 +517,7 @@ export default function CoachAvatar() {
     return (
       <section className="state-card glass">
         <AlertCircle size={28} />
-        <h2>Das Gespräch konnte nicht starten</h2>
+        <h2>Videoverbindung nicht verfügbar</h2>
         <p>{session.error || 'Unbekannter Fehler'}</p>
         <button className="btn btn-secondary" onClick={reset}>Zurück zur Auswahl</button>
       </section>

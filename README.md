@@ -38,6 +38,8 @@ flowchart LR
 
 The upload flow sends audio to the backend, transcribes it with Parakeet and passes the transcript to the same analysis layer. Live calls and GPU uploads consume provider resources; the demo is rate limited.
 
+Live video uses a large avatar view with a small local-camera overlay. Connection deadlines and a scheduled watchdog release abandoned conversations; [mobile layout, recovery timing and verification limits](docs/video-sessions.md).
+
 The upload model is [NVIDIA Parakeet TDT 0.6B v2](https://huggingface.co/nvidia/parakeet-tdt-0.6b-v2), an English ASR model. Uploads do not perform speaker diarization and use the default communication rubric. German live roleplay uses Tavus's separate transcript path; the upload path is not a German interview recording evaluator.
 
 ## Run the frontend

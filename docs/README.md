@@ -6,5 +6,6 @@
 | Source boundaries and operational limits | [Development map](development.md) |
 | Interview sources, question flow and rubric | [Interview design](interview-design.md) |
 | Dated verification and production release | [Recruiter review](recruiter-review.md) |
+| Mobile video layout and abandoned-call recovery | [Video session lifecycle](video-sessions.md) |
 
 The release report distinguishes mocked unit checks, isolated UI checks, actual provider text evaluations and actual public browser checks. It does not claim a completed human microphone/video acceptance test.

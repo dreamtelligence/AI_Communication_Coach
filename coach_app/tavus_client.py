@@ -33,6 +33,10 @@ class TavusError(RuntimeError):
     pass
 
 
+class TavusCapacityError(TavusError):
+    pass
+
+
 def is_configured(api_key: str | None) -> bool:
     return bool(api_key)
 
@@ -92,6 +96,11 @@ def create_conversation(
         json=payload,
         timeout=REQUEST_TIMEOUT,
     )
+    if response.status_code == 400 and "maximum concurrent conversations" in response.text.lower():
+        raise TavusCapacityError(
+            "Alle Videoleitungen sind gerade belegt. Bitte beende dein anderes Gespräch "
+            "oder versuche es in wenigen Minuten erneut."
+        )
     data = _checked_json(response, "create Tavus conversation")
     conversation_id = data.get("conversation_id")
     conversation_url = data.get("conversation_url")

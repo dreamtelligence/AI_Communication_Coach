@@ -23,6 +23,7 @@ from coach_app.analysis import (
 )
 from coach_app.scenarios import SCENARIOS, get_practice_side, get_scenario, list_public_scenarios, scenario_side_payload
 from coach_app.schemas import AnalyzeSessionRequest, CreateSessionRequest
+from coach_app.session_lifecycle import SessionLeases, session_routes
 from coach_app.security import (
     InMemoryRateLimiter,
     SecurityHeadersMiddleware,
@@ -33,6 +34,7 @@ from coach_app.security import (
 )
 from coach_app.tavus_client import (
     TavusError,
+    TavusCapacityError,
     create_conversation,
     end_conversation,
     ensure_pal,
@@ -220,6 +222,8 @@ def create_tavus_session(scenario_id: str = "salary", practice_side: str | None 
             pal_id = ensure_pal(api_key or "", scenario, side["id"])
             pal_cache = {**pal_cache, cache_key: pal_id}
         conversation = create_conversation(api_key or "", pal_id, scenario, side["id"], sandbox=sandbox)
+    except TavusCapacityError as exc:
+        return {"error": str(exc), "error_code": "conversation_capacity"}
     except TavusError as exc:
         return {"error": str(exc)}
 
@@ -269,6 +273,17 @@ def analyze_tavus_session(conversation_id: str, scenario_id: str = "salary", pra
     return result
 
 
+lease_store = modal.Dict.from_name("coach-conversation-leases", create_if_missing=True)
+session_leases = SessionLeases(lease_store, _tavus_api_key)
+
+
+@app.function(image=image, secrets=_tavus_secrets(), schedule=modal.Period(minutes=1), timeout=90)
+def expire_abandoned_sessions() -> dict:
+    result = session_leases.expire()
+    print(f"Conversation watchdog: {result}")
+    return result
+
+
 web_app = FastAPI(
     title="TalkToMe API",
     version="1.0.0",
@@ -277,6 +292,7 @@ web_app = FastAPI(
     openapi_url=None,
 )
 web_app.add_middleware(SecurityHeadersMiddleware)
+web_app.include_router(session_routes(session_leases))
 rate_limiter = InMemoryRateLimiter()
 
 
@@ -324,7 +340,11 @@ def create_session(payload: CreateSessionRequest) -> dict:
         sandbox=payload.sandbox,
     )
     if "error" in result:
-        raise HTTPException(status_code=502, detail=result["error"])
+        raise HTTPException(status_code=503 if result.get("error_code") == "conversation_capacity" else 502, detail=result["error"])
+    try:
+        session_leases.start(result["conversation_id"])
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="Sitzung konnte nicht sicher gestartet werden. Bitte erneut versuchen.") from exc
     # binds status/analyze calls to the browser that created the session
     return {**result, "session_token": issue_session_token(result["conversation_id"])}
 

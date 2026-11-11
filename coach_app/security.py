@@ -28,11 +28,11 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
         response.headers.setdefault(
             "Content-Security-Policy",
-            "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
+            "default-src 'self'; script-src 'self' https://c.daily.co; style-src 'self' 'unsafe-inline'; "
             "font-src 'self' data:; img-src 'self' data: blob:; "
-            "connect-src 'self' https://*.modal.run https://*.tavus.io https://tavus.daily.co; "
+            "connect-src 'self' https://*.modal.run https://*.tavus.io https://*.daily.co wss://*.daily.co https://*.pluot.blue wss://*.pluot.blue; "
             "frame-src https://*.daily.co https://tavus.daily.co https://*.tavus.io; "
-            "media-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'",
+            "media-src 'self' blob:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'",
         )
         return response
 
