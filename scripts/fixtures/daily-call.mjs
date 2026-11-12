@@ -37,7 +37,7 @@ export default {
       setLocalVideo(value) { camera = value; emit('participant-updated') },
       async destroy() { destroyed = true; clearInterval(timer); stream.getTracks().forEach(t => t.stop()) },
     }
-    window.__videoFixture = { freeze: () => clearInterval(timer), call }
+    window.__videoFixture = { freeze: () => clearInterval(timer), disconnect: () => emit('error'), call }
     return call
   },
 }

@@ -12,6 +12,12 @@ A separate provider error reported maximum concurrent conversations. An owner-co
 
 At the owner's follow-up request, phone widths below 760 pixels use the same preview width at twice its original height (2:3), placed 16 pixels from the bottom and right edges. Media buttons sit to the left to avoid overlap at 320 pixels. Desktop keeps its 4:3 preview in the upper corner. The browser regression covers these positions at 320, 393, 768 and 1440 pixels.
 
+## Ending a call and showing the report, 12 November 2026
+
+The video component now unmounts as soon as analysis starts. Its expected disconnect cannot replace the analysis loading screen with a connection error; only an active conversation accepts video-error state changes. Status requests that finish after leaving the active state are ignored, so a late `ended` response cannot start a second paid analysis. Actual connection failures during a call and analysis-provider errors remain visible.
+
+The owner approved publication on 12 November 2026. The isolated regression reproduces the brief connection-error screen before the fix, and a separate delayed-status case reproduces two analysis requests instead of one. All ten transition checks in Chromium/WebKit, the eight existing video checks and the TypeScript/production build pass. These checks use controlled media and API responses; no paid provider call was made for this fix.
+
 ## Abandoned-call recovery
 
 - Each new conversation receives a server-created 120-second deadline in the persistent Modal dictionary `coach-conversation-leases`. Failed registration closes the provider session instead of returning an untracked call.
@@ -39,9 +45,12 @@ npx playwright install chromium webkit
 npm run dev -- --port 3291
 # In another shell, from the repository root:
 node scripts/check_video_call.mjs
+CHECK_URL=http://127.0.0.1:3291/ node scripts/check_analysis_transition.mjs
 ```
 
 `CHECK_URL` selects another served build. `BROWSER_EXECUTABLE` can select an installed Chromium-based executable. Browser checks use an explicitly labeled synthetic video fixture instead of opening paid Tavus conversations. They check active-stage dimensions, the corner preview, media controls, StrictMode cleanup, stopping heartbeats for frozen video, and releasing on unmount. They do not prove real camera/microphone behavior, real Tavus media transport or acceptance on physical iPhones.
+
+The analysis-transition check mocks all API and media responses. It covers manual completion, avatar hang-up, a late status response, a real in-call disconnect and an analysis error in Chromium and WebKit. It makes no provider requests.
 
 ## Actual provider check, 11 November 2026
 

@@ -102,7 +102,7 @@ export default function CoachAvatar() {
   const [setupStatus, setSetupStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const [analysis, setAnalysis] = useState<Analysis | null>(null)
   const handleCallError = useCallback((error: string) => {
-    setSession(current => ({ ...current, status: 'error', error }))
+    setSession(current => current.status === 'active' ? { ...current, status: 'error', error } : current)
   }, [])
   const mounted = useRef(true)
   useEffect(() => {
@@ -200,6 +200,7 @@ export default function CoachAvatar() {
   const autoAnalyzeStarted = useRef(false)
   useEffect(() => {
     if (session.status !== 'active' || !session.conversationId) return
+    let disposed = false
     autoAnalyzeStarted.current = false
     const conversationId = session.conversationId
     const timer = window.setInterval(async () => {
@@ -209,6 +210,7 @@ export default function CoachAvatar() {
         })
         if (!resp.ok) return
         const data = await resp.json()
+        if (disposed) return
         if (data.connection_expired) {
           handleCallError('Die Videoverbindung wurde unterbrochen und die Leitung automatisch freigegeben. Bitte starte ein neues Gespräch.')
           return
@@ -222,7 +224,7 @@ export default function CoachAvatar() {
         // network hiccup: try again on the next tick
       }
     }, 5000)
-    return () => window.clearInterval(timer)
+    return () => { disposed = true; window.clearInterval(timer) }
   }, [session.status, session.conversationId, session.sessionToken, stopAndAnalyze, handleCallError])
 
   const inCall = session.status === 'active' || session.status === 'analyzing'
@@ -394,15 +396,17 @@ export default function CoachAvatar() {
     return (
       <div className="call-layout">
         <div className="stage stage--call">
-          <VideoCall
+          {session.status === 'active' && <VideoCall
             url={session.embedUrl}
             conversationId={session.conversationId!}
             sessionToken={session.sessionToken!}
             name={persona.name}
             onError={handleCallError}
-          />
+          />}
           <div className="call-overlay-top">
-            <span className="stage-chip stage-chip--live"><span className="dot" /> Live {elapsed}</span>
+            {session.status === 'active'
+              ? <span className="stage-chip stage-chip--live"><span className="dot" /> Live {elapsed}</span>
+              : <span className="stage-chip">Gespräch beendet</span>}
             <span className="stage-chip">{persona.name} · KI-Avatar</span>
           </div>
           {session.status === 'analyzing' && (
